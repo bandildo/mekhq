@@ -36,6 +36,7 @@ import megamek.common.Mech;
 import mekhq.campaign.Campaign;
 import mekhq.campaign.GameEffect;
 import mekhq.campaign.LogEntry;
+import mekhq.campaign.MedicalLogEntry;
 import mekhq.campaign.personnel.BodyLocation;
 import mekhq.campaign.personnel.Injury;
 import mekhq.campaign.personnel.InjuryType;
@@ -99,7 +100,7 @@ public final class InjuryUtil {
         if (newInjuries.size() > 0) {
             StringBuilder sb = new StringBuilder("Returned from combat with the following new injuries:");
             newInjuries.forEach((inj) -> sb.append("\n\t\t").append(inj.getFluff()));
-            LogEntry entry = new LogEntry(c.getDate(), sb.toString(), Person.LOGTYPE_MEDICAL);
+            LogEntry entry = new MedicalLogEntry(c.getDate(), sb.toString());
             person.addLogEntry(entry);
         }
     }
@@ -300,10 +301,9 @@ public final class InjuryUtil {
                         rnd -> {
                             int time = i.getTime();
                             i.setTime((int) Math.max(Math.ceil(time * 1.2), time + 5));
-                            LogEntry entry = new LogEntry(c.getDate(),
+                            LogEntry entry = new MedicalLogEntry(c.getDate(),
                                 String.format("%s made a mistake and caused %s to worsen.",
-                                    doc.getFullTitle(), i.getName()),
-                                Person.LOGTYPE_MEDICAL);
+                                    doc.getFullTitle(), i.getName()));
                             p.addLogEntry(entry);
                             if(rnd.applyAsInt(100) < (fumbleLimit / 4)) {
                                 // TODO: Add in special handling of the critical
@@ -318,10 +318,9 @@ public final class InjuryUtil {
                             doc.getHyperlinkedFullTitle(), i.getName(), p.getHyperlinkedName(), critTimeReduction),
                         rnd -> {
                             i.setTime(i.getTime() - critTimeReduction);
-                            LogEntry entry = new LogEntry(c.getDate(),
+                            LogEntry entry = new MedicalLogEntry(c.getDate(),
                                 String.format("%s performed some amazing work in treating %s (%d fewer day(s) to heal).",
-                                    doc.getFullTitle(), i.getName(), critTimeReduction),
-                                Person.LOGTYPE_MEDICAL);
+                                    doc.getFullTitle(), i.getName(), critTimeReduction));
                             p.addLogEntry(entry);
                         }));
                 } else {
@@ -342,10 +341,9 @@ public final class InjuryUtil {
                                 doc.setNTasks(doc.getNTasks() + 1);
                             }
                             i.setWorkedOn(true);
-                            LogEntry entry = new LogEntry(c.getDate(),
+                            LogEntry entry = new MedicalLogEntry(c.getDate(),
                                 String.format("%s successfully treated %s.",
-                                    doc.getFullTitle(), i.getName()),
-                                Person.LOGTYPE_MEDICAL);
+                                    doc.getFullTitle(), i.getName()));
                             p.addLogEntry(entry);
                             Unit u = c.getUnit(p.getUnitId());
                             if(null != u) {
@@ -425,13 +423,13 @@ public final class InjuryUtil {
                             i.setTime(0);
                             if(rnd.applyAsInt(6) == 0) {
                                 i.setPermanent(true);
-                                LogEntry entry = new LogEntry(c.getDate(),
-                                    String.format("%s didn't heal properly", i.getName()), Person.LOGTYPE_MEDICAL);
+                                LogEntry entry = new MedicalLogEntry(c.getDate(),
+                                    String.format("%s didn't heal properly", i.getName()));
                                 p.addLogEntry(entry);
                             } else {
                                 p.removeInjury(i);
-                                LogEntry entry = new LogEntry(c.getDate(),
-                                    String.format("%s healed", i.getName()), Person.LOGTYPE_MEDICAL);
+                                LogEntry entry = new MedicalLogEntry(c.getDate(),
+                                    String.format("%s healed", i.getName()));
                                 p.addLogEntry(entry);
                             }
                         }));
@@ -441,8 +439,8 @@ public final class InjuryUtil {
                         rnd -> {
                             i.setTime(0);
                             p.removeInjury(i);
-                            LogEntry entry = new LogEntry(c.getDate(),
-                                String.format("%s healed", i.getName()), Person.LOGTYPE_MEDICAL);
+                            LogEntry entry = new MedicalLogEntry(c.getDate(),
+                                String.format("%s healed", i.getName()));
                             p.addLogEntry(entry);
                         }));
                 }
@@ -457,8 +455,8 @@ public final class InjuryUtil {
                     String.format("%s becomes permanent", i.getName()),
                     rnd -> {
                         i.setTime(0);
-                        LogEntry entry = new LogEntry(c.getDate(),
-                            String.format("%s became a permanent injury", i.getName()), Person.LOGTYPE_MEDICAL);
+                        LogEntry entry = new MedicalLogEntry(c.getDate(),
+                            String.format("%s became a permanent injury", i.getName()));
                         p.addLogEntry(entry);
                     }));
             }
@@ -469,20 +467,20 @@ public final class InjuryUtil {
                     boolean dismissed = false;
                     if(p.getStatus() == Person.S_KIA) {
                         dismissed = true;
-                        LogEntry entry = new LogEntry(c.getDate(), "Died in the infirmary", Person.LOGTYPE_MEDICAL);
+                        LogEntry entry = new MedicalLogEntry(c.getDate(), "Died in the infirmary");
                         p.addLogEntry(entry);
                     } else if(p.getStatus() == Person.S_MIA) {
                         // What? How?
                         dismissed = true;
-                        LogEntry entry = new LogEntry(c.getDate(), "Got abducted from the infirmary", Person.LOGTYPE_MEDICAL);
+                        LogEntry entry = new MedicalLogEntry(c.getDate(), "Got abducted from the infirmary");
                         p.addLogEntry(entry);
                     } else if(p.getStatus() == Person.S_RETIRED) {
                         dismissed = true;
-                        LogEntry entry = new LogEntry(c.getDate(), "Retired from active duty and got transferred out of the infirmary", Person.LOGTYPE_MEDICAL);
+                        LogEntry entry = new MedicalLogEntry(c.getDate(), "Retired from active duty and got transferred out of the infirmary");
                         p.addLogEntry(entry);
                     } else if(!p.needsFixing()) {
                         dismissed = true;
-                        LogEntry entry = new LogEntry(c.getDate(), "Got dismissed from the infirmary", Person.LOGTYPE_MEDICAL);
+                        LogEntry entry = new MedicalLogEntry(c.getDate(), "Got dismissed from the infirmary");
                         p.addLogEntry(entry);
                     }
                     

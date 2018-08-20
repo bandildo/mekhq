@@ -65,6 +65,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 
+import mekhq.campaign.LogEntryType;
 import org.joda.time.chrono.GJChronology;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -396,7 +397,7 @@ public class MedicalViewDialog extends JDialog {
         panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
         panel.add(genLabel(resourceMap.getString("medicalHistory.text"))); //$NON-NLS-1$
         Map<String, List<LogEntry>> groupedEntries = p.getPersonnelLog().stream()
-            .filter(entry -> entry.isType(Person.LOGTYPE_MEDICAL))
+            .filter(entry -> entry.isType(LogEntryType.MEDICAL))
             .sorted((entry1, entry2) -> entry1.getDate().compareTo(entry2.getDate()))
             .collect(Collectors.groupingBy(entry -> DATE_FORMAT.format(entry.getDate())));
         groupedEntries.entrySet().stream()

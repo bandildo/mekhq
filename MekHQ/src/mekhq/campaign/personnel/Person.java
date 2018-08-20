@@ -45,6 +45,7 @@ import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import mekhq.campaign.*;
 import org.joda.time.DateTime;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -76,10 +77,6 @@ import mekhq.MekHqXmlSerializable;
 import mekhq.MekHqXmlUtil;
 import mekhq.Utilities;
 import mekhq.Version;
-import mekhq.campaign.Campaign;
-import mekhq.campaign.CampaignOptions;
-import mekhq.campaign.ExtraData;
-import mekhq.campaign.LogEntry;
 import mekhq.campaign.event.PersonChangedEvent;
 import mekhq.campaign.mod.am.InjuryUtil;
 import mekhq.campaign.unit.Unit;
@@ -171,7 +168,7 @@ public class Person implements Serializable, MekHqXmlSerializable {
     public static final int DESIG_GAMMA   = 13;
     public static final int DESIG_NUM     = 14;
     
-    public static final String LOGTYPE_MEDICAL = "med";
+//    public static final String LOGTYPE_MEDICAL = "med";
     
     private static final Map<Integer, Integer> MECHWARRIOR_AERO_RANSOM_VALUES; 
     private static final Map<Integer, Integer> OTHER_RANSOM_VALUES;
@@ -3532,7 +3529,7 @@ public class Person implements Serializable, MekHqXmlSerializable {
         return false;
     }
     
-    public void addLogEntry(Date d, String desc, String type) {
+    public void addLogEntry(Date d, String desc, LogEntryType type) {
         personnelLog.add(new LogEntry(d, desc, type));
     }
 

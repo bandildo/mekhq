@@ -34,12 +34,8 @@ import mekhq.MekHQ;
 import mekhq.MekHqXmlSerializable;
 import mekhq.MekHqXmlUtil;
 
-/**
- *
- * @author Jay Lawson <jaylawson39 at yahoo.com>
- */
 public class LogEntry implements MekHqXmlSerializable {
-    private String type;
+    private LogEntryType type;
     private Date date;
     private String desc;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -52,11 +48,13 @@ public class LogEntry implements MekHqXmlSerializable {
         this(date, desc, null);
     }
     
-    public LogEntry(Date date, String desc, String type) {
+    public LogEntry(Date date, String desc, LogEntryType type) {
         this.date = date;
         this.desc = Objects.requireNonNull(desc);
         this.type = type;
     }
+
+
     
     public void setDate(Date d) {
         this.date = d;
@@ -78,15 +76,15 @@ public class LogEntry implements MekHqXmlSerializable {
         return desc;
     }
     
-    public void setType(String type) {
+    public void setType(LogEntryType type) {
         this.type = type;
     }
     
-    public String getType() {
+    public LogEntryType getType() {
         return type;
     }
     
-    public boolean isType(String type) {
+    public boolean isType(LogEntryType type) {
         return Objects.equals(this.type, type);
     }
     
@@ -99,7 +97,7 @@ public class LogEntry implements MekHqXmlSerializable {
         }
         sb.append("<desc>").append(MekHqXmlUtil.escape(desc)).append("</desc>");
         if(null != type) {
-            sb.append("<type>").append(MekHqXmlUtil.escape(type)).append("</type>");
+            sb.append("<type>").append(MekHqXmlUtil.escape(type.toString())).append("</type>");
         }
         sb.append("</logEntry>");
         pw1.println(sb.toString());
@@ -120,7 +118,7 @@ public class LogEntry implements MekHqXmlSerializable {
                 if (wn2.getNodeName().equalsIgnoreCase("desc")) {
                     retVal.desc = wn2.getTextContent();
                 } else if (wn2.getNodeName().equalsIgnoreCase("type")) {
-                    retVal.type = wn2.getTextContent();
+                    retVal.type = LogEntryType.valueOf(wn2.getTextContent());
                 } else if (wn2.getNodeName().equalsIgnoreCase("date")) {
                     retVal.date = DATE_FORMAT.parse(wn2.getTextContent().trim());
                 }
