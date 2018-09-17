@@ -26,6 +26,8 @@ import mekhq.campaign.personnel.Person;
 import java.text.MessageFormat;
 import java.util.Date;
 import java.util.ResourceBundle;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class is responsible to control the logging of Award Log Entries.
@@ -47,11 +49,28 @@ public class AwardLogger {
 
     public void award(Person person, Date date, Award award){
         String message = logEntriesResourceMap.getString("awarded.text");
-        person.addLogEntry(new AwardLogEntry(date, MessageFormat.format(message, award.getName(), award.getDescription())));
+        person.addLogEntry(new AwardLogEntry(date, MessageFormat.format(message, award.getName(), award.getSet(), award.getDescription())));
     }
 
     public void removedAward(Person person, Date date, Award award){
         String message = logEntriesResourceMap.getString("removedAward.text");
         person.addLogEntry(new AwardLogEntry(date, MessageFormat.format(message, award.getName())));
+    }
+
+    /**
+     * Finds the award corresponding to a log entry
+     * @param person owner of the log entry
+     * @param logEntryText text of the log entry
+     * @return award of the owner corresponding to the log entry text
+     */
+    public Award getAwardFromLogEntry(Person person, String logEntryText){
+        String message = logEntriesResourceMap.getString("awarded.text");
+        Pattern pattern = Pattern.compile(MessageFormat.format(message, "(.*)", "(.*)", "(.*)"));
+        Matcher matcher = pattern.matcher(logEntryText);
+
+        if(matcher.matches())
+            return person.awardController.getAward(matcher.group(2), matcher.group(1));
+        else
+            return null;
     }
 }
