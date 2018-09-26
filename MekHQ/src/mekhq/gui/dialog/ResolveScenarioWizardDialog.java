@@ -87,10 +87,11 @@ public class ResolveScenarioWizardDialog extends JDialog {
 	final static String KILLPANEL    = "Assign Kills";
 	final static String REWARDPANEL  = "Collect Rewards";
 	final static String PREVIEWPANEL = "Preview";
+	final static String AWARDSPANEL  = "Suggested Awards";
 	/* Used by AtB to determine minor contract breaches and bonus rolls */
 	final static String ALLYPANEL    = "Ally Status";
 
-	final static String[] panelOrder = {UNITSPANEL,ALLYPANEL,PILOTPANEL,SALVAGEPANEL,PRISONERPANEL,KILLPANEL,REWARDPANEL,PREVIEWPANEL};
+	final static String[] panelOrder = {UNITSPANEL,ALLYPANEL,PILOTPANEL,SALVAGEPANEL,PRISONERPANEL,KILLPANEL,REWARDPANEL,AWARDSPANEL, PREVIEWPANEL};
 
 	private JFrame frame;
 
@@ -765,6 +766,13 @@ public class ResolveScenarioWizardDialog extends JDialog {
         }
     	pnlMain.add(pnlKills, KILLPANEL);
 
+        /*
+         * Suggest Awards Panel
+         */
+        JPanel pnlAwards = new ScenarioAwardsPanel(tracker);
+
+        pnlMain.add(pnlAwards, AWARDSPANEL);
+
     	/*
          * Collect Rewards Panel
          */
@@ -1094,8 +1102,6 @@ public class ResolveScenarioWizardDialog extends JDialog {
       	btnFinish.setEnabled(false);
 
         pack();
-
-
     }
 
     private void switchPanel(String name) {
@@ -1138,6 +1144,9 @@ public class ResolveScenarioWizardDialog extends JDialog {
     	}
         else if(currentPanel.equals(ALLYPANEL)) {
                 txtInstructions.setText(resourceMap.getString("txtInstructions.text.ally"));
+        }
+        else if(currentPanel.equals(AWARDSPANEL)) {
+            txtInstructions.setText(resourceMap.getString("txtInstructions.text.award"));
         }
     	else {
     		txtInstructions.setText("");
@@ -1211,8 +1220,6 @@ public class ResolveScenarioWizardDialog extends JDialog {
     }
 
     private void finish() {
-
-
     	//unit status
     	for(int i = 0; i < chksTotaled.size(); i++) {
     		JCheckBox box = chksTotaled.get(i);
@@ -1336,6 +1343,10 @@ public class ResolveScenarioWizardDialog extends JDialog {
     	else if(panelName.equals(PREVIEWPANEL)) {
     		return true;
     	}
+
+    	if(panelName.equals(AWARDSPANEL)) {
+    	    return true;
+        }
     	return false;
     }
 
