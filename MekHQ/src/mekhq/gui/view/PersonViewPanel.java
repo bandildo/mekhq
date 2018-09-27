@@ -10,13 +10,11 @@ import java.awt.*;
 import java.awt.Dialog.ModalityType;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -26,7 +24,6 @@ import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.table.TableColumn;
 
-import megamek.common.Crew;
 import megamek.common.options.PilotOptions;
 import megamek.common.util.DirectoryItems;
 import megamek.common.util.EncodeControl;
@@ -41,6 +38,7 @@ import mekhq.campaign.personnel.Injury;
 import mekhq.campaign.personnel.Person;
 import mekhq.campaign.personnel.SkillType;
 import mekhq.gui.dialog.MedicalViewDialog;
+import mekhq.gui.dialog.PersonPortraitPanel;
 import mekhq.gui.model.PersonnelEventLogModel;
 import mekhq.gui.model.PersonnelKillLogModel;
 import mekhq.gui.utilities.ImageHelpers;
@@ -53,17 +51,13 @@ import mekhq.gui.utilities.WrapLayout;
 public class PersonViewPanel extends JPanel {
     private static final long serialVersionUID = 7004741688464105277L;
 
-    private static final int MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW = 4;
-
     private Person person;
     private Campaign campaign;
 
-    private DirectoryItems portraits;
     private DirectoryItems awardIcons;
     private IconPackage ip;
 
     private JPanel pnlPortrait;
-    private JLabel lblPortrait;
     private JPanel pnlStats;
     private JTextArea txtDesc;
     private JPanel pnlKills;
@@ -101,16 +95,14 @@ public class PersonViewPanel extends JPanel {
     private JLabel lblChildren2;
     private JPanel pnlMedals;
     private JPanel pnlMiscAwards;
-    private Box boxRibbons;
 
     ResourceBundle resourceMap = null;
-
 
     public PersonViewPanel(Person p, Campaign c, IconPackage ip) {
         this.person = p;
         this.campaign = c;
         this.ip = ip;
-        this.portraits = ip.getPortraits();
+        //this.portraits = ip.getPortraits();
         this.awardIcons = ip.getAwardIcons();
         resourceMap = ResourceBundle.getBundle("mekhq.resources.PersonViewPanel", new EncodeControl()); //$NON-NLS-1$
         initComponents();
@@ -119,7 +111,6 @@ public class PersonViewPanel extends JPanel {
     private void initComponents() {
         GridBagConstraints gridBagConstraints;
 
-        lblPortrait = new JLabel();
         pnlStats = new JPanel();
         pnlPortrait = new JPanel();
         txtDesc = new JTextArea();
@@ -129,11 +120,6 @@ public class PersonViewPanel extends JPanel {
         setLayout(new GridBagLayout());
         setBackground(Color.WHITE);
 
-        // Panel portrait will include the person picture and the ribbons
-        pnlPortrait.setName("pnlPortrait");
-        pnlPortrait.setBackground(Color.WHITE);
-        pnlPortrait.setLayout(new GridBagLayout());
-
         GridBagConstraints gbc_pnlPortrait = new GridBagConstraints();
         gbc_pnlPortrait = new GridBagConstraints();
         gbc_pnlPortrait.gridx = 0;
@@ -141,20 +127,10 @@ public class PersonViewPanel extends JPanel {
         gbc_pnlPortrait.fill = GridBagConstraints.NONE;
         gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
         gbc_pnlPortrait.insets = new Insets(10,10,0,0);
+
+        pnlPortrait = new PersonPortraitPanel(person, ip);
         add(pnlPortrait, gbc_pnlPortrait);
 
-        lblPortrait.setName("lblPortait"); // NOI18N
-        lblPortrait.setBackground(Color.WHITE);
-        setPortrait();
-        
-        GridBagConstraints gbc_lblPortrait = new GridBagConstraints();
-        gbc_lblPortrait.gridx = 0;
-        gbc_lblPortrait.gridy = 0;
-        gbc_lblPortrait.fill = GridBagConstraints.NONE;
-        gbc_lblPortrait.anchor = GridBagConstraints.NORTHWEST;
-        gbc_lblPortrait.insets = new Insets(0,0,0,0);
-        pnlPortrait.add(lblPortrait, gbc_lblPortrait);
-        
         pnlStats.setName("pnlStats");
         pnlStats.setBorder(BorderFactory.createTitledBorder(person.getFullTitle()));
         pnlStats.setBackground(Color.WHITE);
@@ -171,20 +147,6 @@ public class PersonViewPanel extends JPanel {
         int gridy = 1;
         
         if(person.hasAwards()) {
-            if(person.hasAwardsWithRibbons()){
-                boxRibbons = Box.createVerticalBox();
-                boxRibbons.add(Box.createRigidArea(new Dimension(100,0)));
-                drawRibbons();
-
-                GridBagConstraints gbc_pnlAllRibbons = new GridBagConstraints();
-                gbc_pnlAllRibbons.gridx = 0;
-                gbc_pnlAllRibbons.gridy = 1;
-                gbc_pnlAllRibbons.fill = GridBagConstraints.NONE;
-                gbc_pnlAllRibbons.anchor = GridBagConstraints.NORTHWEST;
-                gbc_pnlAllRibbons.insets = new Insets(0,0,0,0);
-                pnlPortrait.add(boxRibbons, gbc_pnlAllRibbons);
-            }
-
             if(person.hasAwardsWithMedals()){
                 pnlMedals = new JPanel();
                 pnlMedals.setName("pnlMedals");
@@ -308,53 +270,6 @@ public class PersonViewPanel extends JPanel {
     }
 
     /**
-     * Draws the ribbons below the person portrait.
-     */
-    private void drawRibbons() {
-        List<Award> awards = person.getAwards().stream().filter(a -> a.getRibbonFileName() != null).collect(Collectors.toList());
-        Collections.reverse(awards);
-
-        int i = 0;
-        Box rowRibbonsBox = null;
-        ArrayList<Box> rowRibbonsBoxes = new ArrayList<>();
-
-        for(Award award : awards){
-            JLabel ribbonLabel = new JLabel();
-            Image ribbon;
-
-            if(i%MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW == 0){
-                rowRibbonsBox = Box.createHorizontalBox();
-                rowRibbonsBox.setBackground(Color.RED);
-            }
-            try{
-                ribbon = (Image) awardIcons.getItem(award.getSet() + "/ribbons/", award.getRibbonFileName());
-                if(ribbon == null) continue;
-                ribbon = ribbon.getScaledInstance(25,8, Image.SCALE_DEFAULT);
-                ribbonLabel.setIcon(new ImageIcon(ribbon));
-                ribbonLabel.setToolTipText("(" + award.getFormatedDate() + ") " + award.getName()
-                        + ": " + award.getDescription());
-                rowRibbonsBox.add(ribbonLabel, 0);
-            }
-            catch (Exception err) {
-                err.printStackTrace();
-            }
-
-            i++;
-            if(i%MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW == 0){
-                rowRibbonsBoxes.add(rowRibbonsBox);
-            }
-        }
-        if(i%MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW!=0){
-            rowRibbonsBoxes.add(rowRibbonsBox);
-        }
-
-        Collections.reverse(rowRibbonsBoxes);
-        for(Box box : rowRibbonsBoxes){
-            boxRibbons.add(box);
-        }
-    }
-
-    /**
      * Draws the medals above the personal log.
      */
     private void drawMedals(){
@@ -400,45 +315,6 @@ public class PersonViewPanel extends JPanel {
             } catch (Exception err) {
                 err.printStackTrace();
             }
-        }
-    }
-
-    /**
-     * set the portrait for the given person.
-     *
-     * @return The <code>Image</code> of the pilot's portrait. This value
-     *         will be <code>null</code> if no portrait was selected
-     *          or if there was an error loading it.
-     */
-    public void setPortrait() {
-
-        String category = person.getPortraitCategory();
-        String filename = person.getPortraitFileName();
-
-        if(Crew.ROOT_PORTRAIT.equals(category)) {
-            category = ""; //$NON-NLS-1$
-        }
-
-        // Return a null if the player has selected no portrait file.
-        if ((null == category) || (null == filename) || Crew.PORTRAIT_NONE.equals(filename)) {
-            filename = "default.gif"; //$NON-NLS-1$
-        }
-
-        // Try to get the player's portrait file.
-        Image portrait = null;
-        try {
-            portrait = (Image) portraits.getItem(category, filename);
-            if(null != portrait) {
-                portrait = portrait.getScaledInstance(100, -1, Image.SCALE_DEFAULT);
-            } else {
-                portrait = (Image) portraits.getItem("", "default.gif");  //$NON-NLS-1$ //$NON-NLS-2$
-                if(null != portrait) {
-                    portrait = portrait.getScaledInstance(100, -1, Image.SCALE_DEFAULT);
-                }
-            }
-            lblPortrait.setIcon(new ImageIcon(portrait));
-        } catch (Exception err) {
-            err.printStackTrace();
         }
     }
 
