@@ -27,6 +27,7 @@ import mekhq.campaign.personnel.Award;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,25 +38,24 @@ import java.util.stream.Collectors;
 public class CustomPersonPortraitPanel extends JPanel {
 
     private JLabel lblPortrait;
-    private Box boxRibbons;
 
     private DirectoryItems portraits;
     private DirectoryItems awardIcons;
 
-    private List<Award> ribbonAwards;
+    private List<Award> awards;
     private String portraitIconCategory;
     private String portraitIconFilename;
 
     private static final int MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW = 4;
 
-    public CustomPersonPortraitPanel(String portraitIconCategory, String portraitIconFilename, List<Award> ribbonAwards, IconPackage ip) {
+    public CustomPersonPortraitPanel(String portraitIconCategory, String portraitIconFilename, List<Award> awards, IconPackage ip) {
 
         super();
         this.portraits = ip.getPortraits();
         this.awardIcons = ip.getAwardIcons();
         this.portraitIconCategory = portraitIconCategory;
         this.portraitIconFilename = portraitIconFilename;
-        this.ribbonAwards = ribbonAwards;
+        this.awards = awards;
 
         lblPortrait = new JLabel();
 
@@ -67,19 +67,7 @@ public class CustomPersonPortraitPanel extends JPanel {
         lblPortrait.setBackground(Color.WHITE);
         setPortrait();
 
-        if(ribbonAwards.size() > 0){
-            boxRibbons = Box.createVerticalBox();
-            boxRibbons.add(Box.createRigidArea(new Dimension(100,0)));
-            drawRibbons();
-
-            GridBagConstraints gbc_pnlAllRibbons = new GridBagConstraints();
-            gbc_pnlAllRibbons.gridx = 0;
-            gbc_pnlAllRibbons.gridy = 1;
-            gbc_pnlAllRibbons.fill = GridBagConstraints.NONE;
-            gbc_pnlAllRibbons.anchor = GridBagConstraints.NORTHWEST;
-            gbc_pnlAllRibbons.insets = new Insets(0,0,0,0);
-            add(boxRibbons, gbc_pnlAllRibbons);
-        }
+        drawRibbons();
 
         GridBagConstraints gbc_lblPortrait = new GridBagConstraints();
         gbc_lblPortrait.gridx = 0;
@@ -130,7 +118,23 @@ public class CustomPersonPortraitPanel extends JPanel {
      * Draws the ribbons below the person portrait.
      */
     private void drawRibbons() {
-        List<Award> awards = ribbonAwards.stream().filter(a -> a.getRibbonFileName() != null).collect(Collectors.toList());
+
+        Box boxRibbons;
+
+        List<Award> ribbonAwards = awards.stream().filter(a -> a.getRibbonFileName() != null).collect(Collectors.toList());
+
+        if(ribbonAwards.size() <= 0){
+            return;
+        }
+
+        boxRibbons = Box.createVerticalBox();
+        boxRibbons.add(Box.createRigidArea(new Dimension(100,0)));
+        GridBagConstraints gbc_pnlAllRibbons = new GridBagConstraints();
+        gbc_pnlAllRibbons.gridx = 0;
+        gbc_pnlAllRibbons.gridy = 1;
+        gbc_pnlAllRibbons.fill = GridBagConstraints.NONE;
+        gbc_pnlAllRibbons.anchor = GridBagConstraints.NORTHWEST;
+        gbc_pnlAllRibbons.insets = new Insets(0,0,0,0);
         Collections.reverse(awards);
 
         int i = 0;
@@ -150,8 +154,12 @@ public class CustomPersonPortraitPanel extends JPanel {
                 if(ribbon == null) continue;
                 ribbon = ribbon.getScaledInstance(25,8, Image.SCALE_DEFAULT);
                 ribbonLabel.setIcon(new ImageIcon(ribbon));
-                ribbonLabel.setToolTipText("(" + award.getFormatedDate() + ") " + award.getName()
-                        + ": " + award.getDescription());
+                String tooltip = award.getName() + ": " + award.getDescription();
+                String prefix = "";
+                if(award.hasDate()){
+                    prefix = "(" + award.getFormatedDate() + ") ";
+                }
+                ribbonLabel.setToolTipText(prefix + tooltip);
                 rowRibbonsBox.add(ribbonLabel, 0);
             }
             catch (Exception err) {
@@ -171,5 +179,7 @@ public class CustomPersonPortraitPanel extends JPanel {
         for(Box box : rowRibbonsBoxes){
             boxRibbons.add(box);
         }
+
+        add(boxRibbons, gbc_pnlAllRibbons);
     }
 }

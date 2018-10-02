@@ -19,6 +19,7 @@
 
 package mekhq.gui.dialog;
 
+import mekhq.IconPackage;
 import mekhq.campaign.ResolveScenarioTracker;
 import mekhq.campaign.personnel.Award;
 import mekhq.campaign.personnel.AwardsFactory;
@@ -31,7 +32,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.util.Collection;
+import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -40,23 +41,28 @@ public class ScenarioAwardsPanel extends JPanel {
     private ResolveScenarioTracker tracker;
 
     private JTable personnelTable = new JTable();
-    private JList availableAwardsList = new JList();
+    private JList unawardedAwardList = new JList();
     private JList awardedAwardsList = new JList();
-    private AwardPreviewPanel awardPreviewPanel = new AwardPreviewPanel();
+    private AwardPreviewPanel awardPreviewPanel;
 
-    private DefaultListModel<Award> availableAwardsListModel = new DefaultListModel<>();
+    private DefaultListModel<Award> allAwardsListModel = new DefaultListModel<>();
+    private DefaultListModel<Award> suggestedAwardsListModel = new DefaultListModel<>();
     private DefaultListModel<Award> awardedAwardsListModel = new DefaultListModel<>();
 
     private HashMap<UUID, DefaultListModel<Award>> awardedAwardsHashMap = new HashMap<>();
 
-    public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker) {
+    public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker, IconPackage iconPackage) {
         super();
         this.setLayout(new GridBagLayout());
 
         this.tracker = scenarioTracker;
 
+        awardPreviewPanel = new AwardPreviewPanel(iconPackage);
+
         createPersonnelTable();
         createAvailableAwardList();
+        createSuggestedAwardList();
+        JPanel unawardedAwardList = createUnawardedAwardList();
         JPanel buttonsPanel = createButtons();
         createAwardedAwardList();
         createAwardPreviewPanel();
@@ -71,16 +77,8 @@ public class ScenarioAwardsPanel extends JPanel {
 
         this.add(new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), gridBagConstraints);
 
-        // Available Awards Panel
-        JPanel availableAwardsPanel = new JPanel();
-        TitledBorder borderAvailableAwards = new TitledBorder("Suggested");
-        borderAvailableAwards.setTitleJustification(TitledBorder.CENTER);
-        borderAvailableAwards.setTitlePosition(TitledBorder.TOP);
-        availableAwardsPanel.setBorder(borderAvailableAwards);
-        availableAwardsPanel.add(availableAwardsList);
         gridBagConstraints.gridx = 1;
-
-        this.add(availableAwardsPanel, gridBagConstraints);
+        this.add(unawardedAwardList, gridBagConstraints);
 
         // Buttons Panel
         gridBagConstraints.gridx = 2;
@@ -143,14 +141,71 @@ public class ScenarioAwardsPanel extends JPanel {
 
         for (String setName : AwardsFactory.getInstance().getAllSetNames()) {
             for (Award award : AwardsFactory.getInstance().getAllAwardsForSet(setName)) {
-                availableAwardsListModel.addElement(award);
+                allAwardsListModel.addElement(award);
             }
         }
+    }
 
-        availableAwardsList.setModel(availableAwardsListModel);
-        availableAwardsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        availableAwardsList.setCellRenderer(new AwardCellRenderer());
-        availableAwardsList.addListSelectionListener(new AwardListSelectionHandler());
+    private void createSuggestedAwardList() {
+
+        for (String setName : AwardsFactory.getInstance().getAllSetNames()) {
+            for (Award award : AwardsFactory.getInstance().getAllAwardsForSet(setName)) {
+                if(award.getXPReward() > 0)
+                    suggestedAwardsListModel.addElement(award);
+            }
+        }
+    }
+
+    private JPanel createUnawardedAwardList(){
+
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.0;
+        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+
+        JPanel availableAwardsPanel = new JPanel();
+        availableAwardsPanel.setLayout(new GridBagLayout());
+        TitledBorder borderAvailableAwards = new TitledBorder("Awards");
+        borderAvailableAwards.setTitleJustification(TitledBorder.CENTER);
+        borderAvailableAwards.setTitlePosition(TitledBorder.TOP);
+        availableAwardsPanel.setBorder(borderAvailableAwards);
+
+        JPanel radioPanel = new JPanel();
+        radioPanel.setLayout(new GridLayout(0,2));
+        JRadioButton allButton = new JRadioButton("All");
+        allButton.setSelected(true);
+        allButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                unawardedAwardList.setModel(allAwardsListModel);
+            }
+        });
+
+        JRadioButton suggestedButton = new JRadioButton("Suggested");
+        suggestedButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                unawardedAwardList.setModel(suggestedAwardsListModel);
+            }
+        });
+
+        ButtonGroup group = new ButtonGroup();
+        group.add(allButton);
+        group.add(suggestedButton);
+        radioPanel.add(allButton);
+        radioPanel.add(suggestedButton);
+        availableAwardsPanel.add(radioPanel, gridBagConstraints);
+
+        unawardedAwardList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        unawardedAwardList.setCellRenderer(new AwardCellRenderer());
+        unawardedAwardList.addListSelectionListener(new AwardListSelectionHandler());
+        unawardedAwardList.setModel(allAwardsListModel);
+        gridBagConstraints.gridy = 1;
+        availableAwardsPanel.add(unawardedAwardList, gridBagConstraints);
+
+        return availableAwardsPanel;
     }
 
     private JPanel createButtons() {
@@ -201,9 +256,9 @@ public class ScenarioAwardsPanel extends JPanel {
 
             DefaultListModel<Award> personAwardListModel = awardedAwardsHashMap.get(personStatus.getId());
 
-            for (Object award : availableAwardsList.getSelectedValuesList()) {
+            for (Object award : unawardedAwardList.getSelectedValuesList()) {
                 awardedAwardsListModel.addElement((Award) award);
-                availableAwardsListModel.removeElement(award);
+                //availableAwardsListModel.removeElement(award);
 
                 personAwardListModel.addElement((Award) award);
             }
@@ -215,7 +270,7 @@ public class ScenarioAwardsPanel extends JPanel {
         @Override
         public void actionPerformed(ActionEvent actionEvent) {
             for (Object award : awardedAwardsList.getSelectedValuesList()) {
-                availableAwardsListModel.addElement((Award) award);
+                //availableAwardsListModel.addElement((Award) award);
                 awardedAwardsListModel.removeElement(award);
             }
         }
@@ -273,18 +328,19 @@ public class ScenarioAwardsPanel extends JPanel {
     class AwardPreviewPanel extends JPanel{
 
         private GridBagConstraints gridBagConstraints = new GridBagConstraints();
+        private IconPackage iconPackage;
 
-        public AwardPreviewPanel() {
+        public AwardPreviewPanel(IconPackage iconPackage) {
 
             super();
 
             this.setLayout(new GridBagLayout());
-            gridBagConstraints.anchor = GridBagConstraints.WEST;
+            this.iconPackage = iconPackage;
+            gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
             gridBagConstraints.weightx = 0.0;
-
         }
 
-        public void updatePreviewForAwards(Collection<Award> awards){
+        public void updatePreviewForAwards(java.util.List<Award> awards){
 
             int i = 1;
 
@@ -295,24 +351,35 @@ public class ScenarioAwardsPanel extends JPanel {
             for(Award award : awards) {
                 gridBagConstraints.gridy = i;
 
-
                 JLabel set = new JLabel();
                 set.setText(award.getSet());
-                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridx = 1;
                 this.add(set, gridBagConstraints);
 
                 JLabel name = new JLabel();
                 name.setText(award.getName());
-                gridBagConstraints.gridx = 1;
+                gridBagConstraints.gridx = 2;
                 this.add(name, gridBagConstraints);
 
                 JLabel desc = new JLabel();
                 desc.setText(award.getDescription());
-                gridBagConstraints.gridx = 2;
+                gridBagConstraints.gridx = 3;
                 this.add(desc, gridBagConstraints);
 
                 i++;
             }
+
+            GridBagConstraints gbc_pnlPortrait = new GridBagConstraints();
+            gbc_pnlPortrait = new GridBagConstraints();
+            gbc_pnlPortrait.gridx = 0;
+            gbc_pnlPortrait.gridy = 0;
+            gbc_pnlPortrait.fill = GridBagConstraints.NONE;
+            gbc_pnlPortrait.gridheight = i;
+            gbc_pnlPortrait.gridwidth = 1;
+            gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
+            gbc_pnlPortrait.insets = new Insets(10,10,0,0);
+            JPanel pnlPortrait = new CustomPersonPortraitPanel("", "default.gif", awards, iconPackage);
+            this.add(pnlPortrait, gbc_pnlPortrait);
 
             this.revalidate();
             this.repaint();
@@ -323,13 +390,13 @@ public class ScenarioAwardsPanel extends JPanel {
             gridBagConstraints.insets = new Insets(2, 2, 5, 10);
 
             gridBagConstraints.gridy = 0;
-            gridBagConstraints.gridx = 0;
+            gridBagConstraints.gridx = 1;
             this.add(new JLabel("<html><b>Set</b></html>"), gridBagConstraints);
 
-            gridBagConstraints.gridx = 1;
+            gridBagConstraints.gridx = 2;
             this.add(new JLabel("<html><b>Name</b></html>"), gridBagConstraints);
 
-            gridBagConstraints.gridx = 2;
+            gridBagConstraints.gridx = 3;
             this.add(new JLabel("<html><b>Description</b></html>"), gridBagConstraints);
         }
     }

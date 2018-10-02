@@ -542,7 +542,7 @@ public class MekHQ implements GameListener {
             tracker.setClient(gameThread.getClient());
             tracker.setEvent(gve);
         	tracker.processGame();
-        	ResolveScenarioWizardDialog resolveDialog = new ResolveScenarioWizardDialog(campaigngui.getFrame(), true, tracker);
+        	ResolveScenarioWizardDialog resolveDialog = new ResolveScenarioWizardDialog(campaigngui.getFrame(), true, tracker, campaigngui.getIconPackage());
         	resolveDialog.setVisible(true);
         	if (campaigngui.getCampaign().getCampaignOptions().getUseAtB() &&
         			campaign.getMission(currentScenario.getMissionId()) instanceof AtBContract &&

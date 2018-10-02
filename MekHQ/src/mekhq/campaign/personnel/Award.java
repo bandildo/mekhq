@@ -140,6 +140,10 @@ public class Award implements MekHqXmlSerializable, Comparable<Award>, Serializa
         return df.format(date.getTime());
     }
 
+    public boolean hasDate(){
+        if(date == null) return false;
+        else return true;
+    }
 
     public String getRibbonFileName(){
         return ribbon;

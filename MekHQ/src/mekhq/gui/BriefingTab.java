@@ -522,7 +522,7 @@ public final class BriefingTab extends CampaignGuiTab {
             return;
         }
         // tracker.postProcessEntities(control);
-        ResolveScenarioWizardDialog resolveDialog = new ResolveScenarioWizardDialog(getFrame(), true, tracker);
+        ResolveScenarioWizardDialog resolveDialog = new ResolveScenarioWizardDialog(getFrame(), true, tracker, getCampaignGui().getIconPackage());
         resolveDialog.setVisible(true);
         if (getCampaign().getCampaignOptions().getUseAtB()
                 && getCampaign().getMission(scenario.getMissionId()) instanceof AtBContract

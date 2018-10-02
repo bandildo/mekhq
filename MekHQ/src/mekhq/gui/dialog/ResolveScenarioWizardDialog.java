@@ -61,6 +61,7 @@ import megamek.client.ui.swing.MechViewPanel;
 import megamek.common.Entity;
 import megamek.common.GunEmplacement;
 import megamek.common.util.EncodeControl;
+import mekhq.IconPackage;
 import mekhq.Utilities;
 import mekhq.campaign.ResolveScenarioTracker;
 import mekhq.campaign.ResolveScenarioTracker.PersonStatus;
@@ -117,6 +118,8 @@ public class ResolveScenarioWizardDialog extends JDialog {
     private JPanel pnlKills;
     private JPanel pnlRewards;
     private JPanel pnlPreview;
+
+    private IconPackage iconPackage;
 
     /*
      * Unit status panel components
@@ -203,10 +206,11 @@ public class ResolveScenarioWizardDialog extends JDialog {
     private javax.swing.JTextArea txtRewards;
     private javax.swing.JLabel lblStatus;
 
-    public ResolveScenarioWizardDialog(JFrame parent, boolean modal, ResolveScenarioTracker t) {
+    public ResolveScenarioWizardDialog(JFrame parent, boolean modal, ResolveScenarioTracker t, IconPackage iconPackage) {
         super(parent, modal);
         this.frame = parent;
         this.tracker = t;
+        this.iconPackage = iconPackage;
         loots = tracker.getPotentialLoot();
         salvageables = new ArrayList<Unit>();
         if(tracker.getMission() instanceof Contract) {
@@ -769,7 +773,7 @@ public class ResolveScenarioWizardDialog extends JDialog {
         /*
          * Suggest Awards Panel
          */
-        JPanel pnlAwards = new ScenarioAwardsPanel(tracker);
+        JPanel pnlAwards = new ScenarioAwardsPanel(tracker, iconPackage);
 
         pnlMain.add(pnlAwards, AWARDSPANEL);
 

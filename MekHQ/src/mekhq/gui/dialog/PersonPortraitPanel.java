@@ -34,7 +34,7 @@ public class PersonPortraitPanel extends CustomPersonPortraitPanel{
     public PersonPortraitPanel(Person person, IconPackage ip) {
         super(person.getPortraitCategory(),
                 person.getPortraitFileName(),
-                person.getAwards().stream().filter(a -> a.getRibbonFileName() != null).collect(Collectors.toList()),
+                person.getAwards(),
                 ip);
     }
 }
