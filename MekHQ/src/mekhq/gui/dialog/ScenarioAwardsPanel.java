@@ -22,17 +22,24 @@ package mekhq.gui.dialog;
 import mekhq.IconPackage;
 import mekhq.campaign.ResolveScenarioTracker;
 import mekhq.campaign.personnel.Award;
-import mekhq.campaign.personnel.AwardsFactory;
+import mekhq.gui.filter.AwardNameFilter;
+import mekhq.gui.filter.AwardSuggestionFilter;
+import mekhq.gui.filter.AwardedAwardsFilter;
+import mekhq.gui.model.ScenarioAwardsAwardTableModel;
+import mekhq.gui.model.ScenarioAwardsPersonTableModel;
 import mekhq.gui.utilities.JTableUtilities;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -40,34 +47,24 @@ public class ScenarioAwardsPanel extends JPanel {
 
     private ResolveScenarioTracker tracker;
 
+    private ScenarioAwardsAwardTableModel awardTableModel = new ScenarioAwardsAwardTableModel();
+    private ScenarioAwardsPersonTableModel personTableModel;
+
     private JTable personnelTable = new JTable();
-    private JList unawardedAwardList = new JList();
-    private JList awardedAwardsList = new JList();
+    private JTable unawardedAwardsTable = new JTable();
+    private JTable awardedAwardsTable = new JTable();
+
     private AwardPreviewPanel awardPreviewPanel;
 
-    private DefaultListModel<Award> allAwardsListModel = new DefaultListModel<>();
-    private DefaultListModel<Award> suggestedAwardsListModel = new DefaultListModel<>();
-    private DefaultListModel<Award> awardedAwardsListModel = new DefaultListModel<>();
-
-    private HashMap<UUID, DefaultListModel<Award>> awardedAwardsHashMap = new HashMap<>();
+    private HashMap<UUID, java.util.List<Award>> awardedAwardsMap = new HashMap<>();
 
     public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker, IconPackage iconPackage) {
         super();
         this.setLayout(new GridBagLayout());
-
         this.tracker = scenarioTracker;
+        personTableModel = new ScenarioAwardsPersonTableModel(scenarioTracker);
 
-        awardPreviewPanel = new AwardPreviewPanel(iconPackage);
-
-        createPersonnelTable();
-        createAvailableAwardList();
-        createSuggestedAwardList();
-        JPanel unawardedAwardList = createUnawardedAwardList();
-        JPanel buttonsPanel = createButtons();
-        createAwardedAwardList();
-        createAwardPreviewPanel();
-
-        // Personnel Table
+        // Initializing gbc
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -75,88 +72,77 @@ public class ScenarioAwardsPanel extends JPanel {
         gridBagConstraints.weightx = 0.0;
         gridBagConstraints.insets = new Insets(5, 5, 0, 0);
 
-        this.add(new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), gridBagConstraints);
+        // Personnel Table
+        gridBagConstraints.gridx = 0;
+        JPanel personnelPanel = createPersonnelPanel();
+        this.add(personnelPanel, gridBagConstraints);
 
+        // Unawarded Awards Table
         gridBagConstraints.gridx = 1;
-        this.add(unawardedAwardList, gridBagConstraints);
+        JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
+        this.add(unawardedAwardsPanel, gridBagConstraints);
 
         // Buttons Panel
         gridBagConstraints.gridx = 2;
+        JPanel buttonsPanel = createButtonsPanel();
         this.add(buttonsPanel, gridBagConstraints);
 
         // Awarded Awards Panel
-        JPanel awardedAwardsPanel = new JPanel();
-        TitledBorder borderAwarded = new TitledBorder("Awarded");
-        borderAwarded.setTitleJustification(TitledBorder.CENTER);
-        borderAwarded.setTitlePosition(TitledBorder.TOP);
-        awardedAwardsPanel.setBorder(borderAwarded);
-
-        awardedAwardsPanel.add(awardedAwardsList);
         gridBagConstraints.gridx = 3;
+        JPanel awardedAwardsPanel = createAwardedAwardsPanel();
         this.add(awardedAwardsPanel, gridBagConstraints);
 
-        // Award preview
+        // Award preview panel
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = GridBagConstraints.BOTH;
         gridBagConstraints.anchor = GridBagConstraints.CENTER;
+        awardPreviewPanel = createAwardPreviewPanel(iconPackage);
         this.add(awardPreviewPanel, gridBagConstraints);
     }
 
-    private void createPersonnelTable() {
+    private JPanel createPersonnelPanel() {
 
-        personnelTable.setModel(new PersonTableModel());
-
+        JPanel personnelPanel = new JPanel();
+        personnelTable.setModel(personTableModel);
         personnelTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
         personnelTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
-
-                // MAYBE THERE IS A SIMPLER WAY TO GET THE MODEL
-                PersonTableModel personTableModel= (PersonTableModel) personnelTable.getModel();
-                ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonSelected(personnelTable.getSelectedRow());
-
-                DefaultListModel<Award> model;
-                UUID personId = personStatus.getId();
-
-                if(awardedAwardsHashMap.containsKey(personId))
-                    model = awardedAwardsHashMap.get(personId);
-                else{
-                    model = new DefaultListModel<>();
-                    awardedAwardsHashMap.put(personId, model);
-                }
-
-                awardedAwardsList.setModel(model);
+                repopulatedAwardedAwardsTable();
             }
         });
 
         personnelTable.changeSelection(0,0,false, false);
-
         JTableUtilities.resizeColumnWidth(personnelTable);
+        personnelPanel.add(new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+        return personnelPanel;
     }
 
-    private void createAvailableAwardList() {
+    private void repopulatedAwardedAwardsTable(){
 
-        for (String setName : AwardsFactory.getInstance().getAllSetNames()) {
-            for (Award award : AwardsFactory.getInstance().getAllAwardsForSet(setName)) {
-                allAwardsListModel.addElement(award);
-            }
+        int personIndex = personnelTable.convertRowIndexToModel(personnelTable.getSelectedRow());
+        ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonAt(personIndex);
+
+        java.util.List<Award> awardedAwards;
+        UUID personId = personStatus.getId();
+
+        TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
+
+        if(awardedAwardsMap.containsKey(personId)){
+            awardedAwards = awardedAwardsMap.get(personId);
         }
-    }
-
-    private void createSuggestedAwardList() {
-
-        for (String setName : AwardsFactory.getInstance().getAllSetNames()) {
-            for (Award award : AwardsFactory.getInstance().getAllAwardsForSet(setName)) {
-                if(award.getXPReward() > 0)
-                    suggestedAwardsListModel.addElement(award);
-            }
+        else{
+            awardedAwards = new ArrayList<>();
+            awardedAwardsMap.put(personId, awardedAwards);
         }
+        sorter.setRowFilter(new AwardedAwardsFilter(awardedAwards));
+        awardedAwardsTable.setRowSorter(sorter);
+        JTableUtilities.resizeColumnWidth(awardedAwardsTable);
     }
 
-    private JPanel createUnawardedAwardList(){
+    private JPanel createUnawardedAwardsPanel() {
 
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -165,12 +151,12 @@ public class ScenarioAwardsPanel extends JPanel {
         gridBagConstraints.weightx = 0.0;
         gridBagConstraints.insets = new Insets(5, 5, 0, 0);
 
-        JPanel availableAwardsPanel = new JPanel();
-        availableAwardsPanel.setLayout(new GridBagLayout());
-        TitledBorder borderAvailableAwards = new TitledBorder("Awards");
-        borderAvailableAwards.setTitleJustification(TitledBorder.CENTER);
-        borderAvailableAwards.setTitlePosition(TitledBorder.TOP);
-        availableAwardsPanel.setBorder(borderAvailableAwards);
+        JPanel unawardedAwardsPanel = new JPanel();
+        unawardedAwardsPanel.setLayout(new GridBagLayout());
+        TitledBorder borderUnawardedAwards = new TitledBorder("Awards");
+        borderUnawardedAwards.setTitleJustification(TitledBorder.CENTER);
+        borderUnawardedAwards.setTitlePosition(TitledBorder.TOP);
+        unawardedAwardsPanel.setBorder(borderUnawardedAwards);
 
         JPanel radioPanel = new JPanel();
         radioPanel.setLayout(new GridLayout(0,2));
@@ -179,7 +165,9 @@ public class ScenarioAwardsPanel extends JPanel {
         allButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                unawardedAwardList.setModel(allAwardsListModel);
+                TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
+                sorter.setRowFilter(null);
+                unawardedAwardsTable.setRowSorter(sorter);
             }
         });
 
@@ -187,7 +175,9 @@ public class ScenarioAwardsPanel extends JPanel {
         suggestedButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                unawardedAwardList.setModel(suggestedAwardsListModel);
+                TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
+                sorter.setRowFilter(new AwardSuggestionFilter());
+                unawardedAwardsTable.setRowSorter(sorter);
             }
         });
 
@@ -196,19 +186,61 @@ public class ScenarioAwardsPanel extends JPanel {
         group.add(suggestedButton);
         radioPanel.add(allButton);
         radioPanel.add(suggestedButton);
-        availableAwardsPanel.add(radioPanel, gridBagConstraints);
+        unawardedAwardsPanel.add(radioPanel, gridBagConstraints);
 
-        unawardedAwardList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        unawardedAwardList.setCellRenderer(new AwardCellRenderer());
-        unawardedAwardList.addListSelectionListener(new AwardListSelectionHandler());
-        unawardedAwardList.setModel(allAwardsListModel);
+        JTextField searchTextField = new JTextField("search", 30);
+        searchTextField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent documentEvent) {
+                TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
+                sorter.setRowFilter(new AwardNameFilter(searchTextField.getText()));
+                unawardedAwardsTable.setRowSorter(sorter);
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent documentEvent) {
+                TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
+                sorter.setRowFilter(new AwardNameFilter(searchTextField.getText()));
+                unawardedAwardsTable.setRowSorter(sorter);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent documentEvent) { }
+        });
         gridBagConstraints.gridy = 1;
-        availableAwardsPanel.add(unawardedAwardList, gridBagConstraints);
+        unawardedAwardsPanel.add(searchTextField, gridBagConstraints);
 
-        return availableAwardsPanel;
+        unawardedAwardsTable.setModel(awardTableModel);
+        unawardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        unawardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        unawardedAwardsTable.getSelectionModel().addListSelectionListener(new AwardListSelectionHandler(unawardedAwardsTable));
+
+        JTableUtilities.resizeColumnWidth(unawardedAwardsTable);
+
+        gridBagConstraints.gridy = 2;
+        unawardedAwardsPanel.add(new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), gridBagConstraints);
+
+        return unawardedAwardsPanel;
     }
 
-    private JPanel createButtons() {
+    private JPanel createAwardedAwardsPanel() {
+        JPanel awardedAwardsPanel = new JPanel();
+        TitledBorder borderAwarded = new TitledBorder("Awarded");
+        borderAwarded.setTitleJustification(TitledBorder.CENTER);
+        borderAwarded.setTitlePosition(TitledBorder.TOP);
+        awardedAwardsPanel.setBorder(borderAwarded);
+
+        awardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        awardedAwardsTable.setModel(awardTableModel);
+        awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        awardedAwardsTable.getSelectionModel().addListSelectionListener(new AwardListSelectionHandler(awardedAwardsTable));
+        JTableUtilities.resizeColumnWidth(awardedAwardsTable);
+        awardedAwardsPanel.add(new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+
+        return awardedAwardsPanel;
+    }
+
+    private JPanel createButtonsPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new GridBagLayout());
 
@@ -233,17 +265,14 @@ public class ScenarioAwardsPanel extends JPanel {
         return panel;
     }
 
-    private void createAwardedAwardList() {
-
-        awardedAwardsList.setCellRenderer(new AwardCellRenderer());
-        awardedAwardsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-    }
-
-    private void createAwardPreviewPanel(){
+    private AwardPreviewPanel createAwardPreviewPanel(IconPackage iconPackage){
+        AwardPreviewPanel awardPreviewPanel = new AwardPreviewPanel(iconPackage);
         TitledBorder borderAwarded = new TitledBorder("AWARD PREVIEW");
         borderAwarded.setTitleJustification(TitledBorder.CENTER);
         borderAwarded.setTitlePosition(TitledBorder.TOP);
         awardPreviewPanel.setBorder(borderAwarded);
+
+        return awardPreviewPanel;
     }
 
     class AddAction extends AbstractAction {
@@ -251,77 +280,35 @@ public class ScenarioAwardsPanel extends JPanel {
         @Override
         public void actionPerformed(ActionEvent actionEvent) {
 
-            PersonTableModel model = (PersonTableModel) personnelTable.getModel();
-            ResolveScenarioTracker.PersonStatus personStatus = model.getPersonSelected(personnelTable.getSelectedRow());
+            ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
+            ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
 
-            DefaultListModel<Award> personAwardListModel = awardedAwardsHashMap.get(personStatus.getId());
+            int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
 
-            for (Object award : unawardedAwardList.getSelectedValuesList()) {
-                awardedAwardsListModel.addElement((Award) award);
-                //availableAwardsListModel.removeElement(award);
-
-                personAwardListModel.addElement((Award) award);
+            for(int i : selectedAwards){
+                int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
+                Award award = awardTableModel.getValueAt(modelIndex);
+                awardedAwardsMap.get(personStatus.getId()).add(award);
+                repopulatedAwardedAwardsTable();
             }
         }
     }
 
     class RemoveAction extends AbstractAction {
-
         @Override
         public void actionPerformed(ActionEvent actionEvent) {
-            for (Object award : awardedAwardsList.getSelectedValuesList()) {
-                //availableAwardsListModel.addElement((Award) award);
-                awardedAwardsListModel.removeElement(award);
+
+            ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
+            ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
+
+            int[] selectedAwards = awardedAwardsTable.getSelectedRows();
+
+            for(int i : selectedAwards){
+                int modelIndex = awardedAwardsTable.convertRowIndexToModel(i);
+                Award award = awardTableModel.getValueAt(modelIndex);
+                awardedAwardsMap.get(personStatus.getId()).remove(award);
+                repopulatedAwardedAwardsTable();
             }
-        }
-    }
-
-    public class AwardCellRenderer extends DefaultListCellRenderer {
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof Award) {
-                String text = String.format("(%s) %s", ((Award) value).getSet(), ((Award) value).getName());
-                setText(text);
-            }
-            return this;
-        }
-    }
-
-    class PersonTableModel extends AbstractTableModel {
-
-        private java.util.List<ResolveScenarioTracker.PersonStatus> personStatusList;
-
-        public PersonTableModel() {
-            personStatusList = tracker.getSortedPeople();
-        }
-
-        private String[] columnNames = {"Name", "Unit"};
-
-        public int getColumnCount() {
-            return columnNames.length;
-        }
-
-        public int getRowCount() {
-            return personStatusList.size();
-        }
-
-        public String getColumnName(int col) {
-            return columnNames[col];
-        }
-
-        public ResolveScenarioTracker.PersonStatus getPersonSelected(int row){
-            return personStatusList.get(row);
-        }
-
-        public Object getValueAt(int row, int col) {
-
-            if (col == 0) {
-                return personStatusList.get(row).getName();
-            }
-            if (col == 1){
-                return personStatusList.get(row).getUnitName();
-            }
-            return "[MISSING DATA]";
         }
     }
 
@@ -403,14 +390,33 @@ public class ScenarioAwardsPanel extends JPanel {
 
     class AwardListSelectionHandler implements ListSelectionListener{
 
+        JTable myTable;
+
+        public AwardListSelectionHandler(JTable mytable) {
+            this.myTable = mytable;
+        }
+
         @Override
         public void valueChanged(ListSelectionEvent listSelectionEvent) {
 
-            JList list = (JList)listSelectionEvent.getSource();
+            ListSelectionModel selectionModel = (ListSelectionModel)listSelectionEvent.getSource();
 
-            if(!listSelectionEvent.getValueIsAdjusting() && !list.isSelectionEmpty()){
-                awardPreviewPanel.updatePreviewForAwards(list.getSelectedValuesList());
+            if(selectionModel.isSelectionEmpty()) return;
+
+            java.util.List selectedAwards = new ArrayList();
+
+            int minIndex = selectionModel.getMinSelectionIndex();
+            int maxIndex = selectionModel.getMaxSelectionIndex();
+
+            for(int i = minIndex; i <= maxIndex; i++){
+                if(selectionModel.isSelectedIndex(i)){
+                    int modelIndex = myTable.convertRowIndexToModel(i);
+                    Award award = awardTableModel.getValueAt(modelIndex);
+                    selectedAwards.add(award);
+                }
             }
-        }
+
+            awardPreviewPanel.updatePreviewForAwards(selectedAwards);
+         }
     }
 }
