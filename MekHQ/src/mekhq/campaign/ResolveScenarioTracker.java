@@ -26,14 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import megamek.client.Client;
@@ -74,6 +67,7 @@ import mekhq.campaign.mission.Mission;
 import mekhq.campaign.mission.Scenario;
 import mekhq.campaign.parts.Armor;
 import mekhq.campaign.parts.Part;
+import mekhq.campaign.personnel.Award;
 import mekhq.campaign.personnel.Person;
 import mekhq.campaign.unit.TestUnit;
 import mekhq.campaign.unit.Unit;
@@ -104,6 +98,7 @@ public class ResolveScenarioTracker {
     Hashtable<String, String> killCredits;
     Hashtable<UUID, EjectedCrew> ejections;
     Hashtable<UUID, EjectedCrew> enemyEjections;
+    HashMap<UUID,List<Award>> awardedAwardsMap;
 
     /* AtB */
     int contractBreaches = 0;
@@ -1098,6 +1093,11 @@ public class ResolveScenarioTracker {
             for(Kill k : status.getKills()) {
                 campaign.addKill(k);
             }
+            if(awardedAwardsMap.containsKey(pid)){
+                for(Award award : awardedAwardsMap.get(pid)){
+                    person.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
+                }
+            }
             if(status.isMissing()) {
                 campaign.changeStatus(person, Person.S_MIA);
             }
@@ -1387,7 +1387,11 @@ public class ResolveScenarioTracker {
     public boolean usesSalvageExchange() {
         return (getMission() instanceof Contract) && ((Contract)getMission()).isSalvageExchange();
     }
-    
+
+    public void setAwardedAwardsMap(HashMap<UUID,List<Award>> awardedAwardsMap) {
+        this.awardedAwardsMap = awardedAwardsMap;
+    }
+
     /**
      * This object is used to track the status of a particular personnel. At the present,
      * we track the person's missing status, hits, and XP

@@ -64,6 +64,9 @@ public class ScenarioAwardsPanel extends JPanel {
         this.tracker = scenarioTracker;
         personTableModel = new ScenarioAwardsPersonTableModel(scenarioTracker);
 
+        // This needs to be first because some listeners depend on it :(
+        awardPreviewPanel = new AwardPreviewPanel(iconPackage);
+
         // Initializing gbc
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -77,6 +80,7 @@ public class ScenarioAwardsPanel extends JPanel {
         JPanel personnelPanel = createPersonnelPanel();
         this.add(personnelPanel, gridBagConstraints);
 
+
         // Unawarded Awards Table
         gridBagConstraints.gridx = 1;
         JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
@@ -89,17 +93,8 @@ public class ScenarioAwardsPanel extends JPanel {
 
         // Awarded Awards Panel
         gridBagConstraints.gridx = 3;
-        JPanel awardedAwardsPanel = createAwardedAwardsPanel();
+        JPanel awardedAwardsPanel = createAwardedAwardsPanel(iconPackage);
         this.add(awardedAwardsPanel, gridBagConstraints);
-
-        // Award preview panel
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 4;
-        gridBagConstraints.fill = GridBagConstraints.BOTH;
-        gridBagConstraints.anchor = GridBagConstraints.CENTER;
-        awardPreviewPanel = createAwardPreviewPanel(iconPackage);
-        this.add(awardPreviewPanel, gridBagConstraints);
     }
 
     private JPanel createPersonnelPanel() {
@@ -110,36 +105,43 @@ public class ScenarioAwardsPanel extends JPanel {
         personnelTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
-                repopulatedAwardedAwardsTable();
+                int personIndex = personnelTable.convertRowIndexToModel(personnelTable.getSelectedRow());
+                ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonAt(personIndex);
+                UUID personId = personStatus.getId();
+
+                java.util.List<Award> awardedAwards;
+
+                if(awardedAwardsMap.containsKey(personId)){
+                    awardedAwards = awardedAwardsMap.get(personId);
+                }
+                else{
+                    awardedAwards = new ArrayList<>();
+                    awardedAwardsMap.put(personId, awardedAwards);
+                }
+
+                repopulatedAwardedAwardsTable(personId, awardedAwards);
+                repopulateAwardPreviewPanel(personId, awardedAwards);
             }
         });
 
         personnelTable.changeSelection(0,0,false, false);
         JTableUtilities.resizeColumnWidth(personnelTable);
         personnelPanel.add(new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+
         return personnelPanel;
     }
 
-    private void repopulatedAwardedAwardsTable(){
-
-        int personIndex = personnelTable.convertRowIndexToModel(personnelTable.getSelectedRow());
-        ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonAt(personIndex);
-
-        java.util.List<Award> awardedAwards;
-        UUID personId = personStatus.getId();
+    private void repopulatedAwardedAwardsTable(UUID personId, java.util.List<Award> awardedAwards){
 
         TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
 
-        if(awardedAwardsMap.containsKey(personId)){
-            awardedAwards = awardedAwardsMap.get(personId);
-        }
-        else{
-            awardedAwards = new ArrayList<>();
-            awardedAwardsMap.put(personId, awardedAwards);
-        }
         sorter.setRowFilter(new AwardedAwardsFilter(awardedAwards));
         awardedAwardsTable.setRowSorter(sorter);
         JTableUtilities.resizeColumnWidth(awardedAwardsTable);
+    }
+
+    private void repopulateAwardPreviewPanel(UUID personId, java.util.List<Award> awardedAwards){
+        awardPreviewPanel.updatePreviewForAwards(awardedAwards);
     }
 
     private JPanel createUnawardedAwardsPanel() {
@@ -213,29 +215,39 @@ public class ScenarioAwardsPanel extends JPanel {
         unawardedAwardsTable.setModel(awardTableModel);
         unawardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         unawardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        unawardedAwardsTable.getSelectionModel().addListSelectionListener(new AwardListSelectionHandler(unawardedAwardsTable));
 
         JTableUtilities.resizeColumnWidth(unawardedAwardsTable);
 
         gridBagConstraints.gridy = 2;
-        unawardedAwardsPanel.add(new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), gridBagConstraints);
+        unawardedAwardsPanel.add(new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), gridBagConstraints);
 
         return unawardedAwardsPanel;
     }
 
-    private JPanel createAwardedAwardsPanel() {
+    private JPanel createAwardedAwardsPanel(IconPackage iconPackage) {
         JPanel awardedAwardsPanel = new JPanel();
+        awardedAwardsPanel.setLayout(new GridBagLayout());
         TitledBorder borderAwarded = new TitledBorder("Awarded");
         borderAwarded.setTitleJustification(TitledBorder.CENTER);
         borderAwarded.setTitlePosition(TitledBorder.TOP);
         awardedAwardsPanel.setBorder(borderAwarded);
 
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.weightx = 0.0;
+        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+
+        awardedAwardsPanel.add(awardPreviewPanel, gridBagConstraints);
+
+        gridBagConstraints.gridy = 1;
         awardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         awardedAwardsTable.setModel(awardTableModel);
         awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        awardedAwardsTable.getSelectionModel().addListSelectionListener(new AwardListSelectionHandler(awardedAwardsTable));
         JTableUtilities.resizeColumnWidth(awardedAwardsTable);
-        awardedAwardsPanel.add(new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+        awardedAwardsPanel.add(new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), gridBagConstraints);
 
         return awardedAwardsPanel;
     }
@@ -265,15 +277,7 @@ public class ScenarioAwardsPanel extends JPanel {
         return panel;
     }
 
-    private AwardPreviewPanel createAwardPreviewPanel(IconPackage iconPackage){
-        AwardPreviewPanel awardPreviewPanel = new AwardPreviewPanel(iconPackage);
-        TitledBorder borderAwarded = new TitledBorder("AWARD PREVIEW");
-        borderAwarded.setTitleJustification(TitledBorder.CENTER);
-        borderAwarded.setTitlePosition(TitledBorder.TOP);
-        awardPreviewPanel.setBorder(borderAwarded);
-
-        return awardPreviewPanel;
-    }
+    public HashMap<UUID, java.util.List<Award>> getAwardedAwardsMap(){ return awardedAwardsMap; }
 
     class AddAction extends AbstractAction {
 
@@ -281,15 +285,22 @@ public class ScenarioAwardsPanel extends JPanel {
         public void actionPerformed(ActionEvent actionEvent) {
 
             ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
-            ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
 
-            int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
+            for(int personIndex : personnelTable.getSelectedRows())
+            {
+                ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personIndex);
 
-            for(int i : selectedAwards){
-                int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
-                Award award = awardTableModel.getValueAt(modelIndex);
-                awardedAwardsMap.get(personStatus.getId()).add(award);
-                repopulatedAwardedAwardsTable();
+                int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
+
+                for(int i : selectedAwards){
+                    int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
+                    Award award = awardTableModel.getValueAt(modelIndex);
+                    UUID personId = personStatus.getId();
+                    java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
+                    awardedAwards.add(award);
+                    repopulatedAwardedAwardsTable(personId, awardedAwards);
+                    repopulateAwardPreviewPanel(personId, awardedAwards);
+                }
             }
         }
     }
@@ -306,8 +317,11 @@ public class ScenarioAwardsPanel extends JPanel {
             for(int i : selectedAwards){
                 int modelIndex = awardedAwardsTable.convertRowIndexToModel(i);
                 Award award = awardTableModel.getValueAt(modelIndex);
-                awardedAwardsMap.get(personStatus.getId()).remove(award);
-                repopulatedAwardedAwardsTable();
+                UUID personId = personStatus.getId();
+                java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
+                awardedAwards.remove(award);
+                repopulatedAwardedAwardsTable(personId, awardedAwards);
+                repopulateAwardPreviewPanel(personId, awardedAwards);
             }
         }
     }
@@ -327,41 +341,15 @@ public class ScenarioAwardsPanel extends JPanel {
             gridBagConstraints.weightx = 0.0;
         }
 
-        public void updatePreviewForAwards(java.util.List<Award> awards){
-
-            int i = 1;
-
+        public void updatePreviewForAwards(java.util.List<Award> awards)
+        {
             this.removeAll();
-            addHeaders();
-            gridBagConstraints.insets = new Insets(2, 2, 2, 10);
-
-            for(Award award : awards) {
-                gridBagConstraints.gridy = i;
-
-                JLabel set = new JLabel();
-                set.setText(award.getSet());
-                gridBagConstraints.gridx = 1;
-                this.add(set, gridBagConstraints);
-
-                JLabel name = new JLabel();
-                name.setText(award.getName());
-                gridBagConstraints.gridx = 2;
-                this.add(name, gridBagConstraints);
-
-                JLabel desc = new JLabel();
-                desc.setText(award.getDescription());
-                gridBagConstraints.gridx = 3;
-                this.add(desc, gridBagConstraints);
-
-                i++;
-            }
 
             GridBagConstraints gbc_pnlPortrait = new GridBagConstraints();
-            gbc_pnlPortrait = new GridBagConstraints();
             gbc_pnlPortrait.gridx = 0;
             gbc_pnlPortrait.gridy = 0;
             gbc_pnlPortrait.fill = GridBagConstraints.NONE;
-            gbc_pnlPortrait.gridheight = i;
+            gbc_pnlPortrait.gridheight = 1;
             gbc_pnlPortrait.gridwidth = 1;
             gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
             gbc_pnlPortrait.insets = new Insets(10,10,0,0);
@@ -371,52 +359,5 @@ public class ScenarioAwardsPanel extends JPanel {
             this.revalidate();
             this.repaint();
         }
-
-        private void addHeaders(){
-
-            gridBagConstraints.insets = new Insets(2, 2, 5, 10);
-
-            gridBagConstraints.gridy = 0;
-            gridBagConstraints.gridx = 1;
-            this.add(new JLabel("<html><b>Set</b></html>"), gridBagConstraints);
-
-            gridBagConstraints.gridx = 2;
-            this.add(new JLabel("<html><b>Name</b></html>"), gridBagConstraints);
-
-            gridBagConstraints.gridx = 3;
-            this.add(new JLabel("<html><b>Description</b></html>"), gridBagConstraints);
-        }
-    }
-
-    class AwardListSelectionHandler implements ListSelectionListener{
-
-        JTable myTable;
-
-        public AwardListSelectionHandler(JTable mytable) {
-            this.myTable = mytable;
-        }
-
-        @Override
-        public void valueChanged(ListSelectionEvent listSelectionEvent) {
-
-            ListSelectionModel selectionModel = (ListSelectionModel)listSelectionEvent.getSource();
-
-            if(selectionModel.isSelectionEmpty()) return;
-
-            java.util.List selectedAwards = new ArrayList();
-
-            int minIndex = selectionModel.getMinSelectionIndex();
-            int maxIndex = selectionModel.getMaxSelectionIndex();
-
-            for(int i = minIndex; i <= maxIndex; i++){
-                if(selectionModel.isSelectedIndex(i)){
-                    int modelIndex = myTable.convertRowIndexToModel(i);
-                    Award award = awardTableModel.getValueAt(modelIndex);
-                    selectedAwards.add(award);
-                }
-            }
-
-            awardPreviewPanel.updatePreviewForAwards(selectedAwards);
-         }
     }
 }

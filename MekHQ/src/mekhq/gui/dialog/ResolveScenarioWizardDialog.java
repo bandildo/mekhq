@@ -118,6 +118,7 @@ public class ResolveScenarioWizardDialog extends JDialog {
     private JPanel pnlKills;
     private JPanel pnlRewards;
     private JPanel pnlPreview;
+    private ScenarioAwardsPanel pnlAwards;
 
     private IconPackage iconPackage;
 
@@ -773,7 +774,7 @@ public class ResolveScenarioWizardDialog extends JDialog {
         /*
          * Suggest Awards Panel
          */
-        JPanel pnlAwards = new ScenarioAwardsPanel(tracker, iconPackage);
+        pnlAwards = new ScenarioAwardsPanel(tracker, iconPackage);
 
         pnlMain.add(pnlAwards, AWARDSPANEL);
 
@@ -1308,6 +1309,8 @@ public class ResolveScenarioWizardDialog extends JDialog {
                 tracker.addLoot(loots.get(i));
             }
         }
+
+        tracker.setAwardedAwardsMap(pnlAwards.getAwardedAwardsMap());
 
     	//now process
     	tracker.resolveScenario(choiceStatus.getSelectedIndex()+1,txtReport.getText());

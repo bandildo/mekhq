@@ -39,7 +39,7 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
         }
     }
 
-    private String[] columnNames = {"Set", "Name", "XP", "Edge"};
+    private String[] columnNames = {"Set", "Name", "XP", "Edge", "Desc."};
 
     @Override
     public int getRowCount() {
@@ -64,6 +64,9 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
         }
         if (col == 3){
             return awards.get(row).getEdgeReward();
+        }
+        if (col == 4){
+            return awards.get(row).getDescription();
         }
         return "[MISSING DATA]";
     }
