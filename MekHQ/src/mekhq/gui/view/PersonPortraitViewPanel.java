@@ -17,21 +17,18 @@
  * along with MekHQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package mekhq.gui.dialog;
+package mekhq.gui.view;
 
 import mekhq.IconPackage;
-import mekhq.campaign.personnel.Award;
 import mekhq.campaign.personnel.Person;
-
-import java.util.List;
-import java.util.stream.Collectors;
+import mekhq.gui.view.CustomPersonPortraitViewPanel;
 
 /**
  * A specific implementation of the CustomPersonPortraitPanel where the award list and the portrait are from a specific Person
  */
-public class PersonPortraitPanel extends CustomPersonPortraitPanel{
+public class PersonPortraitViewPanel extends CustomPersonPortraitViewPanel {
 
-    public PersonPortraitPanel(Person person, IconPackage ip) {
+    public PersonPortraitViewPanel(Person person, IconPackage ip) {
         super(person.getPortraitCategory(),
                 person.getPortraitFileName(),
                 person.getAwards(),

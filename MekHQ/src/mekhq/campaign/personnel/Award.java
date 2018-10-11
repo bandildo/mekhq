@@ -145,6 +145,16 @@ public class Award implements MekHqXmlSerializable, Comparable<Award>, Serializa
         else return true;
     }
 
+    public String getTooltipText(){
+        String tooltip = getName() + ": " + getDescription();
+        String prefix = "";
+
+        if(hasDate()){
+            prefix = "(" + getFormatedDate() + ") ";
+        }
+        return (prefix + tooltip);
+    }
+
     public String getRibbonFileName(){
         return ribbon;
     }

@@ -17,7 +17,7 @@
  * along with MekHQ.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package mekhq.gui.dialog;
+package mekhq.gui.view;
 
 import megamek.common.Crew;
 import megamek.common.util.DirectoryItems;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * This class extends a JPanel that will display a portrait icon and, underneath, the ribbons of a given award list
  */
-public class CustomPersonPortraitPanel extends JPanel {
+public class CustomPersonPortraitViewPanel extends JPanel {
 
     private JLabel lblPortrait;
 
@@ -48,7 +48,7 @@ public class CustomPersonPortraitPanel extends JPanel {
 
     private static final int MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW = 4;
 
-    public CustomPersonPortraitPanel(String portraitIconCategory, String portraitIconFilename, List<Award> awards, IconPackage ip) {
+    public CustomPersonPortraitViewPanel(String portraitIconCategory, String portraitIconFilename, List<Award> awards, IconPackage ip) {
 
         super();
         this.portraits = ip.getPortraits();
@@ -154,12 +154,7 @@ public class CustomPersonPortraitPanel extends JPanel {
                 if(ribbon == null) continue;
                 ribbon = ribbon.getScaledInstance(25,8, Image.SCALE_DEFAULT);
                 ribbonLabel.setIcon(new ImageIcon(ribbon));
-                String tooltip = award.getName() + ": " + award.getDescription();
-                String prefix = "";
-                if(award.hasDate()){
-                    prefix = "(" + award.getFormatedDate() + ") ";
-                }
-                ribbonLabel.setToolTipText(prefix + tooltip);
+                ribbonLabel.setToolTipText(award.getTooltipText());
                 rowRibbonsBox.add(ribbonLabel, 0);
             }
             catch (Exception err) {

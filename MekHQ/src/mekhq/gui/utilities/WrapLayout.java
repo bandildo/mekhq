@@ -16,6 +16,8 @@ public class WrapLayout extends FlowLayout
 {
     private Dimension preferredLayoutSize;
 
+    int maxWidth = Integer.MAX_VALUE;
+
     /**
      * Constructs a new <code>WrapLayout</code> with a left
      * alignment and a default 5-unit horizontal and vertical gap.
@@ -38,6 +40,10 @@ public class WrapLayout extends FlowLayout
         super(align);
     }
 
+    public WrapLayout(int align, int maxWidth){
+        super(align);
+        this.maxWidth = maxWidth;
+    }
     /**
      * Creates a new flow layout manager with the indicated alignment
      * and the indicated horizontal and vertical gaps.
@@ -98,7 +104,8 @@ public class WrapLayout extends FlowLayout
             //  When the container width = 0, the preferred width of the container
             //  has not yet been calculated so lets ask for the maximum.
 
-            int targetWidth = target.getSize().width;
+            int targetWidth;
+
             Container container = target;
 
             while (container.getSize().width == 0 && container.getParent() != null)
@@ -109,7 +116,7 @@ public class WrapLayout extends FlowLayout
             targetWidth = container.getSize().width;
 
             if (targetWidth == 0)
-                targetWidth = Integer.MAX_VALUE;
+                targetWidth = maxWidth;
 
             int hgap = getHgap();
             int vgap = getVgap();

@@ -28,6 +28,10 @@ import mekhq.gui.filter.AwardedAwardsFilter;
 import mekhq.gui.model.ScenarioAwardsAwardTableModel;
 import mekhq.gui.model.ScenarioAwardsPersonTableModel;
 import mekhq.gui.utilities.JTableUtilities;
+import mekhq.gui.utilities.WrapLayout;
+import mekhq.gui.view.AwardedMedalsViewPanel;
+import mekhq.gui.view.AwardedMiscViewPanel;
+import mekhq.gui.view.CustomPersonPortraitViewPanel;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -60,48 +64,40 @@ public class ScenarioAwardsPanel extends JPanel {
 
     public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker, IconPackage iconPackage) {
         super();
-        this.setLayout(new GridBagLayout());
         this.tracker = scenarioTracker;
         personTableModel = new ScenarioAwardsPersonTableModel(scenarioTracker);
+
+        this.setLayout(new GridBagLayout());
 
         // This needs to be first because some listeners depend on it :(
         awardPreviewPanel = new AwardPreviewPanel(iconPackage);
 
         // Initializing gbc
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.weightx = 0.0;
-        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+        gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
 
-        // Personnel Table
-        gridBagConstraints.gridx = 0;
-        JPanel personnelPanel = createPersonnelPanel();
-        this.add(personnelPanel, gridBagConstraints);
-
-
-        // Unawarded Awards Table
+        // Awarded Awards Panel
         gridBagConstraints.gridx = 1;
-        JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
-        this.add(unawardedAwardsPanel, gridBagConstraints);
+        JPanel awardedAwardsPanel = createAwardedAwardsPanel(iconPackage);
+        this.add(awardedAwardsPanel, gridBagConstraints);
 
         // Buttons Panel
         gridBagConstraints.gridx = 2;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         JPanel buttonsPanel = createButtonsPanel();
         this.add(buttonsPanel, gridBagConstraints);
 
-        // Awarded Awards Panel
+        // Unawarded Awards Table
         gridBagConstraints.gridx = 3;
-        JPanel awardedAwardsPanel = createAwardedAwardsPanel(iconPackage);
-        this.add(awardedAwardsPanel, gridBagConstraints);
+        JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
+        this.add(unawardedAwardsPanel, gridBagConstraints);
     }
 
-    private JPanel createPersonnelPanel() {
-
-        JPanel personnelPanel = new JPanel();
+    private JScrollPane createPersonnelPanel() {
         personnelTable.setModel(personTableModel);
         personnelTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        personnelTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         personnelTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
@@ -125,10 +121,13 @@ public class ScenarioAwardsPanel extends JPanel {
         });
 
         personnelTable.changeSelection(0,0,false, false);
-        JTableUtilities.resizeColumnWidth(personnelTable);
-        personnelPanel.add(new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
 
-        return personnelPanel;
+        JScrollPane pane = new JScrollPane(personnelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Dimension preferedSize = pane.getPreferredSize();
+        preferedSize.width = 400;
+        preferedSize.height = 125;
+        pane.setPreferredSize(preferedSize);
+        return pane;
     }
 
     private void repopulatedAwardedAwardsTable(UUID personId, java.util.List<Award> awardedAwards){
@@ -149,9 +148,7 @@ public class ScenarioAwardsPanel extends JPanel {
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.weightx = 0.0;
-        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+        gridBagConstraints.anchor = GridBagConstraints.NORTH;
 
         JPanel unawardedAwardsPanel = new JPanel();
         unawardedAwardsPanel.setLayout(new GridBagLayout());
@@ -215,11 +212,19 @@ public class ScenarioAwardsPanel extends JPanel {
         unawardedAwardsTable.setModel(awardTableModel);
         unawardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         unawardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-
         JTableUtilities.resizeColumnWidth(unawardedAwardsTable);
+        unawardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
+            public void valueChanged(ListSelectionEvent event) {
+                awardedAwardsTable.clearSelection();
+            }
+        });
 
         gridBagConstraints.gridy = 2;
-        unawardedAwardsPanel.add(new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), gridBagConstraints);
+        JScrollPane pane = new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Dimension preferedSize = pane.getPreferredSize();
+        preferedSize.width = 400;
+        pane.setPreferredSize(preferedSize);
+        unawardedAwardsPanel.add(pane, gridBagConstraints);
 
         return unawardedAwardsPanel;
     }
@@ -227,7 +232,7 @@ public class ScenarioAwardsPanel extends JPanel {
     private JPanel createAwardedAwardsPanel(IconPackage iconPackage) {
         JPanel awardedAwardsPanel = new JPanel();
         awardedAwardsPanel.setLayout(new GridBagLayout());
-        TitledBorder borderAwarded = new TitledBorder("Awarded");
+        TitledBorder borderAwarded = new TitledBorder("Personnel");
         borderAwarded.setTitleJustification(TitledBorder.CENTER);
         borderAwarded.setTitlePosition(TitledBorder.TOP);
         awardedAwardsPanel.setBorder(borderAwarded);
@@ -235,19 +240,33 @@ public class ScenarioAwardsPanel extends JPanel {
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.weightx = 0.0;
-        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
 
-        awardedAwardsPanel.add(awardPreviewPanel, gridBagConstraints);
+        JScrollPane personnelPanel = createPersonnelPanel();
+        awardedAwardsPanel.add(personnelPanel, gridBagConstraints);
+
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
 
         gridBagConstraints.gridy = 1;
+        awardedAwardsPanel.add(awardPreviewPanel, gridBagConstraints);
+
+        gridBagConstraints.gridy = 2;
         awardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         awardedAwardsTable.setModel(awardTableModel);
         awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JTableUtilities.resizeColumnWidth(awardedAwardsTable);
-        awardedAwardsPanel.add(new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED), gridBagConstraints);
+        awardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
+            public void valueChanged(ListSelectionEvent event) {
+                unawardedAwardsTable.clearSelection();
+            }
+        });
+
+        JScrollPane pane = new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Dimension preferedSize = pane.getPreferredSize();
+        preferedSize.width = 400;
+        preferedSize.height = 225;
+        pane.setPreferredSize(preferedSize);
+        awardedAwardsPanel.add(pane, gridBagConstraints);
 
         return awardedAwardsPanel;
     }
@@ -258,19 +277,16 @@ public class ScenarioAwardsPanel extends JPanel {
 
         JButton addButton = new JButton();
         addButton.setAction(new AddAction());
-        addButton.setText(">>>");
+        addButton.setText("<<<");
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 1;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.weightx = 0.0;
-        gridBagConstraints.insets = new Insets(5, 5, 0, 0);
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         panel.add(addButton, gridBagConstraints);
 
         JButton removeButton = new JButton();
         removeButton.setAction(new RemoveAction());
-        removeButton.setText("<<<");
+        removeButton.setText(">>>");
         gridBagConstraints.gridy = 1;
         panel.add(removeButton, gridBagConstraints);
 
@@ -314,8 +330,9 @@ public class ScenarioAwardsPanel extends JPanel {
 
             int[] selectedAwards = awardedAwardsTable.getSelectedRows();
 
-            for(int i : selectedAwards){
-                int modelIndex = awardedAwardsTable.convertRowIndexToModel(i);
+            for(int i = selectedAwards.length - 1; i >= 0; i--){
+                int modelIndex = awardedAwardsTable.convertRowIndexToModel(selectedAwards[i]);
+
                 Award award = awardTableModel.getValueAt(modelIndex);
                 UUID personId = personStatus.getId();
                 java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
@@ -335,7 +352,7 @@ public class ScenarioAwardsPanel extends JPanel {
 
             super();
 
-            this.setLayout(new GridBagLayout());
+            setLayout(new GridBagLayout());
             this.iconPackage = iconPackage;
             gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
             gridBagConstraints.weightx = 0.0;
@@ -343,18 +360,36 @@ public class ScenarioAwardsPanel extends JPanel {
 
         public void updatePreviewForAwards(java.util.List<Award> awards)
         {
-            this.removeAll();
+            removeAll();
 
             GridBagConstraints gbc_pnlPortrait = new GridBagConstraints();
             gbc_pnlPortrait.gridx = 0;
             gbc_pnlPortrait.gridy = 0;
-            gbc_pnlPortrait.fill = GridBagConstraints.NONE;
-            gbc_pnlPortrait.gridheight = 1;
-            gbc_pnlPortrait.gridwidth = 1;
+
+            gbc_pnlPortrait.gridheight = 2;
             gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
-            gbc_pnlPortrait.insets = new Insets(10,10,0,0);
-            JPanel pnlPortrait = new CustomPersonPortraitPanel("", "default.gif", awards, iconPackage);
-            this.add(pnlPortrait, gbc_pnlPortrait);
+            JPanel pnlPortrait = new CustomPersonPortraitViewPanel("", "default.gif", awards, iconPackage);
+            add(pnlPortrait, gbc_pnlPortrait);
+
+            gbc_pnlPortrait.gridx = 1;
+            gbc_pnlPortrait.gridy = 0;
+            gbc_pnlPortrait.gridheight = 1;
+            gbc_pnlPortrait.fill = GridBagConstraints.BOTH;
+
+            JPanel medalsPanel = new AwardedMedalsViewPanel(awards, iconPackage.getAwardIcons());
+            //medalsPanel.setLayout(new WrapLayout(FlowLayout.LEFT, 300));
+            Dimension preferedSize = medalsPanel.getPreferredSize();
+            preferedSize.width = 300;
+            medalsPanel.setPreferredSize(preferedSize);
+            add(medalsPanel, gbc_pnlPortrait);
+
+            gbc_pnlPortrait.gridy = 1;
+            JPanel miscPanel = new AwardedMiscViewPanel(awards, iconPackage.getAwardIcons(), new Dimension(60, 60));
+            //miscPanel.setLayout(new WrapLayout(FlowLayout.LEFT, 300));
+            preferedSize = miscPanel.getPreferredSize();
+            preferedSize.width = 300;
+            miscPanel.setPreferredSize(preferedSize);
+            add(miscPanel, gbc_pnlPortrait);
 
             this.revalidate();
             this.repaint();
