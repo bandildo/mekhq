@@ -26,6 +26,7 @@ import mekhq.gui.utilities.WrapLayout;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,17 +46,17 @@ public class AwardedMedalsViewPanel extends JPanel{
         this.setLayout(new WrapLayout(FlowLayout.LEFT));
     }
 
-    public void refresh(List<Award> awards){
+    public void refresh(Collection<Award> awards){
 
         removeAll();
-        List<Award> filteredAwards = awards.stream().filter(a -> a.getMedalFileName() != null).sorted().collect(Collectors.toList());
+        List<Award> filteredAwards = awards.stream().filter(a -> a.getNumberOfMedalFiles() > 0).sorted().collect(Collectors.toList());
 
         for(Award award : filteredAwards){
             JLabel medalLabel = new JLabel();
 
             Image medal = null;
             try{
-                medal = (Image) awardIcons.getItem( award.getSet() + "/medals/", award.getMedalFileName());
+                medal = (Image) awardIcons.getItem( award.getSet() + "/medals/", award.getMedalFileName(award.getQuantity()));
                 if(medal == null) continue;
                 medal = ImageHelpers.getScaledForBoundaries(medal, medalDimensions, Image.SCALE_DEFAULT);
                 medalLabel.setIcon(new ImageIcon(medal));

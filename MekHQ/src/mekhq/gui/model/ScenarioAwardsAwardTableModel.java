@@ -39,7 +39,7 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
         }
     }
 
-    private String[] columnNames = {"Set", "Name", "XP", "Edge", "Desc."};
+    private String[] columnNames = {"Qty.", "Set", "Name", "XP", "Edge", "Desc."};
 
     @Override
     public int getRowCount() {
@@ -54,18 +54,21 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
     @Override
     public Object getValueAt(int row, int col) {
         if (col == 0) {
+            return awards.get(row).getQuantity();
+        }
+        if (col == 1) {
             return awards.get(row).getSet();
         }
-        if (col == 1){
+        if (col == 2){
             return awards.get(row).getName();
         }
-        if (col == 2){
+        if (col == 3){
             return awards.get(row).getXPReward();
         }
-        if (col == 3){
+        if (col == 4){
             return awards.get(row).getEdgeReward();
         }
-        if (col == 4){
+        if (col == 5){
             return awards.get(row).getDescription();
         }
         return "[MISSING DATA]";

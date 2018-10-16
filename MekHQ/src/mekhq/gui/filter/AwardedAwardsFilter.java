@@ -23,13 +23,14 @@ import mekhq.campaign.personnel.Award;
 import mekhq.gui.model.ScenarioAwardsAwardTableModel;
 
 import javax.swing.*;
+import java.util.Collection;
 import java.util.List;
 
 public class AwardedAwardsFilter extends RowFilter<ScenarioAwardsAwardTableModel, Integer> {
 
-    private java.util.List<Award> awardedAwards;
+    private Collection<Award> awardedAwards;
 
-    public AwardedAwardsFilter(List<Award> awardedAwards) {
+    public AwardedAwardsFilter(Collection<Award> awardedAwards) {
         super();
         this.awardedAwards = awardedAwards;
     }

@@ -57,7 +57,7 @@ public class ScenarioAwardsPanel extends JPanel {
 
     private AwardPreviewPanel awardPreviewPanel;
 
-    private HashMap<UUID, java.util.List<Award>> awardedAwardsMap = new HashMap<>();
+    private HashMap<UUID, Set<Award>> awardedAwardsMap = new HashMap<>();
 
     public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker, IconPackage iconPackage) {
         super();
@@ -141,13 +141,13 @@ public class ScenarioAwardsPanel extends JPanel {
                 ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonAt(personIndex);
                 UUID personId = personStatus.getId();
 
-                java.util.List<Award> awardedAwards;
+                Set<Award> awardedAwards;
 
                 if(awardedAwardsMap.containsKey(personId)){
                     awardedAwards = awardedAwardsMap.get(personId);
                 }
                 else{
-                    awardedAwards = new ArrayList<>();
+                    awardedAwards = new HashSet<>();
                     awardedAwardsMap.put(personId, awardedAwards);
                 }
 
@@ -166,7 +166,7 @@ public class ScenarioAwardsPanel extends JPanel {
         return pane;
     }
 
-    private void repopulatedAwardedAwardsTable(UUID personId, java.util.List<Award> awardedAwards){
+    private void repopulatedAwardedAwardsTable(UUID personId, Collection<Award> awardedAwards){
 
         TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
 
@@ -175,7 +175,7 @@ public class ScenarioAwardsPanel extends JPanel {
         JTableUtilities.resizeColumnWidth(awardedAwardsTable);
     }
 
-    private void repopulateAwardPreviewPanel(UUID personId, java.util.List<Award> awardedAwards){
+    private void repopulateAwardPreviewPanel(UUID personId, Collection<Award> awardedAwards){
         awardPreviewPanel.updatePreviewForAwards(awardedAwards);
     }
 
@@ -248,6 +248,7 @@ public class ScenarioAwardsPanel extends JPanel {
         unawardedAwardsTable.setModel(awardTableModel);
         unawardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         unawardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+//        unawardedAwardsTable.removeColumn(unawardedAwardsTable.getColumnModel().getColumn(1));
         JTableUtilities.resizeColumnWidth(unawardedAwardsTable);
         unawardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
             public void valueChanged(ListSelectionEvent event) {
@@ -264,7 +265,6 @@ public class ScenarioAwardsPanel extends JPanel {
 
         return unawardedAwardsPanel;
     }
-
 
     private JPanel createButtonsPanel() {
         JPanel panel = new JPanel();
@@ -288,7 +288,7 @@ public class ScenarioAwardsPanel extends JPanel {
         return panel;
     }
 
-    public HashMap<UUID, java.util.List<Award>> getAwardedAwardsMap(){ return awardedAwardsMap; }
+    public HashMap<UUID, Set<Award>> getAwardedAwardsMap(){ return awardedAwardsMap; }
 
     class AddAction extends AbstractAction {
 
@@ -303,14 +303,22 @@ public class ScenarioAwardsPanel extends JPanel {
             {
                 ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personIndex);
                 UUID personId = personStatus.getId();
-                java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
+                Set<Award> awardedAwards = awardedAwardsMap.get(personId);
 
                 int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
 
                 for(int i : selectedAwards){
                     int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
                     Award award = awardTableModel.getValueAt(modelIndex);
-                    awardedAwards.add(award);
+
+                    if(awardedAwards.contains(award)){
+                        Award personAward = awardedAwards.stream().filter(award::equals).findAny().orElse(null);
+                        personAward.incrementQuantity();
+                    }
+                    else{
+                        award.incrementQuantity();
+                        awardedAwards.add(award);
+                    }
                 }
 
                 if(!firstPersonProcessed){
@@ -329,15 +337,22 @@ public class ScenarioAwardsPanel extends JPanel {
             ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
             ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
             UUID personId = personStatus.getId();
-            java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
+            Set<Award> awardedAwards = awardedAwardsMap.get(personId);
 
             int[] selectedAwards = awardedAwardsTable.getSelectedRows();
 
             for(int i = selectedAwards.length - 1; i >= 0; i--){
                 int modelIndex = awardedAwardsTable.convertRowIndexToModel(selectedAwards[i]);
-
                 Award award = awardTableModel.getValueAt(modelIndex);
-                awardedAwards.remove(award);
+
+                if(awardedAwards.contains(award)){
+                    Award personAward = awardedAwards.stream().filter(award::equals).findAny().orElse(null);
+                    personAward.decrementQuantity();
+                    if(personAward.getQuantity() == 0){
+                        awardedAwards.remove(award);
+                    }
+                }
+
                 repopulatedAwardedAwardsTable(personId, awardedAwards);
                 repopulateAwardPreviewPanel(personId, awardedAwards);
             }
@@ -387,7 +402,7 @@ public class ScenarioAwardsPanel extends JPanel {
             add(miscsPanel, gbc);
         }
 
-        public void updatePreviewForAwards(java.util.List<Award> awards)
+        public void updatePreviewForAwards(Collection<Award> awards)
         {
             personPanel.refresh(awards, "", "default.gif");
             medalsPanel.refresh(awards);

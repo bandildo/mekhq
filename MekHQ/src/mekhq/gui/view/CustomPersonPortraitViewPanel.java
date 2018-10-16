@@ -27,8 +27,7 @@ import mekhq.campaign.personnel.Person;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,14 +50,14 @@ public class CustomPersonPortraitViewPanel extends JPanel {
         this.awardIcons = ip.getAwardIcons();
     }
 
-    public void refresh(List<Award> awards, String portraitIconCategory, String portraitIconFilename){
+    public void refresh(Collection<Award> awards, String portraitIconCategory, String portraitIconFilename){
         removeAll();
         drawPortrait(portraitIconCategory, portraitIconFilename);
         drawRibbons(awards);
     }
 
     public void refresh(Person person){
-        refresh(person.getAwards(), person.getPortraitCategory(), person.getPortraitFileName());
+        refresh(person.awardController.getAwards(), person.getPortraitCategory(), person.getPortraitFileName());
     }
 
     /**
@@ -113,11 +112,11 @@ public class CustomPersonPortraitViewPanel extends JPanel {
     /**
      * Draws the ribbons below the person portrait.
      */
-    protected void drawRibbons(List<Award> awards) {
+    protected void drawRibbons(Collection<Award> awards) {
 
         Box boxRibbons;
 
-        List<Award> ribbonAwards = awards.stream().filter(a -> a.getRibbonFileName() != null).collect(Collectors.toList());
+        List<Award> ribbonAwards = awards.stream().filter(a -> a.getNumberOfRibbonFiles() > 0).sorted().collect(Collectors.toList());
 
         if(ribbonAwards.size() <= 0){
             return;
@@ -131,13 +130,13 @@ public class CustomPersonPortraitViewPanel extends JPanel {
         gbc_pnlAllRibbons.fill = GridBagConstraints.NONE;
         gbc_pnlAllRibbons.anchor = GridBagConstraints.NORTHWEST;
         gbc_pnlAllRibbons.insets = new Insets(0,0,0,0);
-        Collections.reverse(awards);
+        Collections.reverse(ribbonAwards);
 
         int i = 0;
         Box rowRibbonsBox = null;
         ArrayList<Box> rowRibbonsBoxes = new ArrayList<>();
 
-        for(Award award : awards){
+        for(Award award : ribbonAwards){
             JLabel ribbonLabel = new JLabel();
             Image ribbon;
 
@@ -146,7 +145,7 @@ public class CustomPersonPortraitViewPanel extends JPanel {
                 rowRibbonsBox.setBackground(Color.RED);
             }
             try{
-                ribbon = (Image) awardIcons.getItem(award.getSet() + "/ribbons/", award.getRibbonFileName());
+                ribbon = (Image) awardIcons.getItem(award.getSet() + "/ribbons/", award.getRibbonFileName(award.getQuantity()));
                 if(ribbon == null) continue;
                 ribbon = ribbon.getScaledInstance(25,8, Image.SCALE_DEFAULT);
                 ribbonLabel.setIcon(new ImageIcon(ribbon));

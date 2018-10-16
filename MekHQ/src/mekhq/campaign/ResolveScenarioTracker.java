@@ -98,7 +98,7 @@ public class ResolveScenarioTracker {
     Hashtable<String, String> killCredits;
     Hashtable<UUID, EjectedCrew> ejections;
     Hashtable<UUID, EjectedCrew> enemyEjections;
-    HashMap<UUID,List<Award>> awardedAwardsMap;
+    HashMap<UUID,Set<Award>> awardedAwardsMap;
 
     /* AtB */
     int contractBreaches = 0;
@@ -1095,7 +1095,7 @@ public class ResolveScenarioTracker {
             }
             if(awardedAwardsMap.containsKey(pid)){
                 for(Award award : awardedAwardsMap.get(pid)){
-                    person.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
+                    person.awardController.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
                 }
             }
             if(status.isMissing()) {
@@ -1388,7 +1388,7 @@ public class ResolveScenarioTracker {
         return (getMission() instanceof Contract) && ((Contract)getMission()).isSalvageExchange();
     }
 
-    public void setAwardedAwardsMap(HashMap<UUID,List<Award>> awardedAwardsMap) {
+    public void setAwardedAwardsMap(HashMap<UUID,Set<Award>> awardedAwardsMap) {
         this.awardedAwardsMap = awardedAwardsMap;
     }
 

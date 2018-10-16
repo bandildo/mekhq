@@ -26,6 +26,7 @@ import mekhq.gui.utilities.WrapLayout;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,17 +46,17 @@ public class AwardedMiscViewPanel extends JPanel {
         this.setLayout(new WrapLayout(FlowLayout.LEFT));
     }
 
-    public void refresh(List<Award> awards) {
+    public void refresh(Collection<Award> awards) {
 
         removeAll();
-        List<Award> filteredAwards = awards.stream().filter(a -> a.getMiscFileName() != null).sorted().collect(Collectors.toList());
+        List<Award> filteredAwards = awards.stream().filter(a -> a.getNumberOfMiscFiles() > 0).sorted().collect(Collectors.toList());
 
         for (Award award : filteredAwards) {
             JLabel miscLabel = new JLabel();
 
             Image miscAward = null;
             try {
-                Image miscAwardBufferedImage = (Image) awardIcons.getItem(award.getSet() + "/misc/", award.getMiscFileName());
+                Image miscAwardBufferedImage = (Image) awardIcons.getItem(award.getSet() + "/misc/", award.getMiscFileName(award.getQuantity()));
                 if (miscAwardBufferedImage == null) continue;
                 miscAward = ImageHelpers.getScaledForBoundaries(miscAwardBufferedImage, miscDimensions, Image.SCALE_DEFAULT);
                 miscLabel.setIcon(new ImageIcon(miscAward));

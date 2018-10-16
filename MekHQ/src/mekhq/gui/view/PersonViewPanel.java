@@ -140,10 +140,10 @@ public class PersonViewPanel extends JPanel {
 
         int gridy = 1;
         
-        if(person.hasAwards()) {
-            if(person.hasAwardsWithMedals()){
+        if(person.awardController.hasAwards()) {
+            if(person.awardController.hasAwardsWithMedals()){
                 pnlMedals = new AwardedMedalsViewPanel(awardIcons);
-                pnlMedals.refresh(person.getAwards());
+                pnlMedals.refresh(person.awardController.getAwards());
 
                 GridBagConstraints gbc_pnlMedals = new GridBagConstraints();
                 gbc_pnlMedals.fill = GridBagConstraints.BOTH;
@@ -156,9 +156,9 @@ public class PersonViewPanel extends JPanel {
                 gridy++;
             }
 
-            if(person.hasAwardsWithMiscs()){
+            if(person.awardController.hasAwardsWithMiscs()){
                 pnlMiscAwards = new AwardedMiscViewPanel(awardIcons);
-                pnlMiscAwards.refresh(person.getAwards());
+                pnlMiscAwards.refresh(person.awardController.getAwards());
 
                 GridBagConstraints gbc_pnlMiscAwards = new GridBagConstraints();
                 gbc_pnlMiscAwards.fill = GridBagConstraints.BOTH;
@@ -542,7 +542,7 @@ public class PersonViewPanel extends JPanel {
             secondy = firsty;
         }
 
-        if (null != person.getSpouseID()) {
+        if (person.hasSpouse()) {
             secondy++;
             lblSpouse1.setName("lblSpouse1"); // NOI18N //$NON-NLS-1$
             lblSpouse1.setText(resourceMap.getString("lblSpouse1.text")); //$NON-NLS-1$
