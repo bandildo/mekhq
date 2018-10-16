@@ -31,25 +31,26 @@ import java.util.stream.Collectors;
 
 public class AwardedMedalsViewPanel extends JPanel{
 
-    private List<Award> awards;
+    private Dimension medalDimensions;
     private DirectoryItems awardIcons;
 
-    public AwardedMedalsViewPanel(List<Award> awards, DirectoryItems awardIcons) {
-        this(awards, awardIcons, new Dimension(30,60));
+    public AwardedMedalsViewPanel(DirectoryItems awardIcons) {
+        this(awardIcons, new Dimension(30,60));
     }
 
-    public AwardedMedalsViewPanel(List<Award> awards, DirectoryItems awardIcons, Dimension medalDimensions) {
-        this.awards = awards.stream().filter(a -> a.getMedalFileName() != null).sorted().collect(Collectors.toList());
+    public AwardedMedalsViewPanel(DirectoryItems awardIcons, Dimension medalDimensions) {
         this.awardIcons = awardIcons;
-        drawMedals(medalDimensions);
-    }
-
-    public void drawMedals(Dimension medalDimensions){
-
+        this.medalDimensions = medalDimensions;
         this.setName("pnlMedals");
         this.setLayout(new WrapLayout(FlowLayout.LEFT));
+    }
 
-        for(Award award : awards){
+    public void refresh(List<Award> awards){
+
+        removeAll();
+        List<Award> filteredAwards = awards.stream().filter(a -> a.getMedalFileName() != null).sorted().collect(Collectors.toList());
+
+        for(Award award : filteredAwards){
             JLabel medalLabel = new JLabel();
 
             Image medal = null;
@@ -59,7 +60,7 @@ public class AwardedMedalsViewPanel extends JPanel{
                 medal = ImageHelpers.getScaledForBoundaries(medal, medalDimensions, Image.SCALE_DEFAULT);
                 medalLabel.setIcon(new ImageIcon(medal));
                 medalLabel.setToolTipText(award.getTooltipText());
-                this.add(medalLabel);
+                add(medalLabel);
             }
             catch (Exception err) {
                 err.printStackTrace();

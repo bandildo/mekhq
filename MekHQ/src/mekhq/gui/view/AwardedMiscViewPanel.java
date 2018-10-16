@@ -21,7 +21,6 @@ package mekhq.gui.view;
 
 import megamek.common.util.DirectoryItems;
 import mekhq.campaign.personnel.Award;
-import mekhq.gui.dialog.ScenarioAwardsPanel;
 import mekhq.gui.utilities.ImageHelpers;
 import mekhq.gui.utilities.WrapLayout;
 
@@ -32,32 +31,33 @@ import java.util.stream.Collectors;
 
 public class AwardedMiscViewPanel extends JPanel {
 
-    private List<Award> awards;
+    private Dimension miscDimensions;
     private DirectoryItems awardIcons;
 
-    public AwardedMiscViewPanel(List<Award> awards, DirectoryItems awardIcons) {
-        this(awards, awardIcons, new Dimension(100,100));
+    public AwardedMiscViewPanel(DirectoryItems awardIcons) {
+        this(awardIcons, new Dimension(100,100));
     }
 
-    public AwardedMiscViewPanel(List<Award> awards, DirectoryItems awardIcons, Dimension meiscDimensions) {
-        this.awards = awards.stream().filter(a -> a.getMiscFileName() != null).sorted().collect(Collectors.toList());
+    public AwardedMiscViewPanel(DirectoryItems awardIcons, Dimension miscDimensions) {
+        this.miscDimensions = miscDimensions;
         this.awardIcons = awardIcons;
-        drawMisc(meiscDimensions);
+        this.setName("pnlMiscs");
+        this.setLayout(new WrapLayout(FlowLayout.LEFT));
     }
 
-    private void drawMisc(Dimension dimension) {
+    public void refresh(List<Award> awards) {
 
-        this.setName("pnlMisc");
-        this.setLayout(new WrapLayout(FlowLayout.LEFT));
+        removeAll();
+        List<Award> filteredAwards = awards.stream().filter(a -> a.getMiscFileName() != null).sorted().collect(Collectors.toList());
 
-        for (Award award : awards) {
+        for (Award award : filteredAwards) {
             JLabel miscLabel = new JLabel();
 
             Image miscAward = null;
             try {
                 Image miscAwardBufferedImage = (Image) awardIcons.getItem(award.getSet() + "/misc/", award.getMiscFileName());
                 if (miscAwardBufferedImage == null) continue;
-                miscAward = ImageHelpers.getScaledForBoundaries(miscAwardBufferedImage, dimension, Image.SCALE_DEFAULT);
+                miscAward = ImageHelpers.getScaledForBoundaries(miscAwardBufferedImage, miscDimensions, Image.SCALE_DEFAULT);
                 miscLabel.setIcon(new ImageIcon(miscAward));
                 miscLabel.setToolTipText(award.getTooltipText());
                 this.add(miscLabel);

@@ -11,7 +11,6 @@ import java.awt.Dialog.ModalityType;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -38,7 +37,6 @@ import mekhq.campaign.personnel.SkillType;
 import mekhq.gui.dialog.MedicalViewDialog;
 import mekhq.gui.model.PersonnelEventLogModel;
 import mekhq.gui.model.PersonnelKillLogModel;
-import mekhq.gui.utilities.WrapLayout;
 
 /**
  * A custom panel that gets filled in with goodies from a Person record
@@ -53,7 +51,7 @@ public class PersonViewPanel extends JPanel {
     private DirectoryItems awardIcons;
     private IconPackage ip;
 
-    private JPanel pnlPortrait;
+    private CustomPersonPortraitViewPanel pnlPortrait;
     private JPanel pnlStats;
     private JTextArea txtDesc;
     private JPanel pnlKills;
@@ -89,8 +87,8 @@ public class PersonViewPanel extends JPanel {
     private JLabel lblSpouse2;
     private JLabel lblChildren1;
     private JLabel lblChildren2;
-    private JPanel pnlMedals;
-    private JPanel pnlMiscAwards;
+    private AwardedMedalsViewPanel pnlMedals;
+    private AwardedMiscViewPanel pnlMiscAwards;
 
     ResourceBundle resourceMap = null;
 
@@ -98,8 +96,8 @@ public class PersonViewPanel extends JPanel {
         this.person = p;
         this.campaign = c;
         this.ip = ip;
-        //this.portraits = ip.getPortraits();
         this.awardIcons = ip.getAwardIcons();
+
         resourceMap = ResourceBundle.getBundle("mekhq.resources.PersonViewPanel", new EncodeControl()); //$NON-NLS-1$
         initComponents();
     }
@@ -108,7 +106,6 @@ public class PersonViewPanel extends JPanel {
         GridBagConstraints gridBagConstraints;
 
         pnlStats = new JPanel();
-        pnlPortrait = new JPanel();
         txtDesc = new JTextArea();
         pnlKills = new JPanel();
         pnlLog = new JPanel();
@@ -124,7 +121,8 @@ public class PersonViewPanel extends JPanel {
         gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
         gbc_pnlPortrait.insets = new Insets(10,10,0,0);
 
-        pnlPortrait = new PersonPortraitViewPanel(person, ip);
+        pnlPortrait = new CustomPersonPortraitViewPanel(ip);
+        pnlPortrait.refresh(person);
         add(pnlPortrait, gbc_pnlPortrait);
 
         pnlStats.setName("pnlStats");
@@ -144,8 +142,8 @@ public class PersonViewPanel extends JPanel {
         
         if(person.hasAwards()) {
             if(person.hasAwardsWithMedals()){
-                pnlMedals = new AwardedMedalsViewPanel(person.getAwards(), awardIcons);
-                //pnlMedals.setLayout(new WrapLayout(FlowLayout.LEFT));
+                pnlMedals = new AwardedMedalsViewPanel(awardIcons);
+                pnlMedals.refresh(person.getAwards());
 
                 GridBagConstraints gbc_pnlMedals = new GridBagConstraints();
                 gbc_pnlMedals.fill = GridBagConstraints.BOTH;
@@ -159,8 +157,8 @@ public class PersonViewPanel extends JPanel {
             }
 
             if(person.hasAwardsWithMiscs()){
-                pnlMiscAwards = new AwardedMiscViewPanel(person.getAwards(), awardIcons);
-                //pnlMedals.setLayout(new WrapLayout(FlowLayout.LEFT));
+                pnlMiscAwards = new AwardedMiscViewPanel(awardIcons);
+                pnlMiscAwards.refresh(person.getAwards());
 
                 GridBagConstraints gbc_pnlMiscAwards = new GridBagConstraints();
                 gbc_pnlMiscAwards.fill = GridBagConstraints.BOTH;

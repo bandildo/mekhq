@@ -28,7 +28,6 @@ import mekhq.gui.filter.AwardedAwardsFilter;
 import mekhq.gui.model.ScenarioAwardsAwardTableModel;
 import mekhq.gui.model.ScenarioAwardsPersonTableModel;
 import mekhq.gui.utilities.JTableUtilities;
-import mekhq.gui.utilities.WrapLayout;
 import mekhq.gui.view.AwardedMedalsViewPanel;
 import mekhq.gui.view.AwardedMiscViewPanel;
 import mekhq.gui.view.CustomPersonPortraitViewPanel;
@@ -43,9 +42,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 public class ScenarioAwardsPanel extends JPanel {
 
@@ -79,8 +76,8 @@ public class ScenarioAwardsPanel extends JPanel {
 
         // Awarded Awards Panel
         gridBagConstraints.gridx = 1;
-        JPanel awardedAwardsPanel = createAwardedAwardsPanel(iconPackage);
-        this.add(awardedAwardsPanel, gridBagConstraints);
+        JPanel leftSidePanel = createLeftSidePanel();
+        this.add(leftSidePanel, gridBagConstraints);
 
         // Buttons Panel
         gridBagConstraints.gridx = 2;
@@ -88,10 +85,49 @@ public class ScenarioAwardsPanel extends JPanel {
         JPanel buttonsPanel = createButtonsPanel();
         this.add(buttonsPanel, gridBagConstraints);
 
-        // Unawarded Awards Table
+        // Unawarded Awards
         gridBagConstraints.gridx = 3;
         JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
         this.add(unawardedAwardsPanel, gridBagConstraints);
+    }
+
+    private JPanel createLeftSidePanel() {
+        JPanel leftSidePanel = new JPanel();
+        leftSidePanel.setLayout(new GridBagLayout());
+        TitledBorder borderAwarded = new TitledBorder("Personnel");
+        borderAwarded.setTitleJustification(TitledBorder.CENTER);
+        borderAwarded.setTitlePosition(TitledBorder.TOP);
+        leftSidePanel.setBorder(borderAwarded);
+
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
+        JScrollPane personnelPanel = createPersonnelPanel();
+        leftSidePanel.add(personnelPanel, gridBagConstraints);
+
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
+        gridBagConstraints.gridy = 1;
+        leftSidePanel.add(awardPreviewPanel, gridBagConstraints);
+
+        gridBagConstraints.gridy = 2;
+        awardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        awardedAwardsTable.setModel(awardTableModel);
+        awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        JTableUtilities.resizeColumnWidth(awardedAwardsTable);
+        awardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
+            public void valueChanged(ListSelectionEvent event) {
+                unawardedAwardsTable.clearSelection();
+            }
+        });
+        JScrollPane awardedAwardsPane = new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Dimension preferedSize = awardedAwardsPane.getPreferredSize();
+        preferedSize.width = 400;
+        preferedSize.height = 225;
+        awardedAwardsPane.setPreferredSize(preferedSize);
+        leftSidePanel.add(awardedAwardsPane, gridBagConstraints);
+
+        return leftSidePanel;
     }
 
     private JScrollPane createPersonnelPanel() {
@@ -229,47 +265,6 @@ public class ScenarioAwardsPanel extends JPanel {
         return unawardedAwardsPanel;
     }
 
-    private JPanel createAwardedAwardsPanel(IconPackage iconPackage) {
-        JPanel awardedAwardsPanel = new JPanel();
-        awardedAwardsPanel.setLayout(new GridBagLayout());
-        TitledBorder borderAwarded = new TitledBorder("Personnel");
-        borderAwarded.setTitleJustification(TitledBorder.CENTER);
-        borderAwarded.setTitlePosition(TitledBorder.TOP);
-        awardedAwardsPanel.setBorder(borderAwarded);
-
-        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTH;
-
-        JScrollPane personnelPanel = createPersonnelPanel();
-        awardedAwardsPanel.add(personnelPanel, gridBagConstraints);
-
-        gridBagConstraints.anchor = GridBagConstraints.WEST;
-
-        gridBagConstraints.gridy = 1;
-        awardedAwardsPanel.add(awardPreviewPanel, gridBagConstraints);
-
-        gridBagConstraints.gridy = 2;
-        awardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        awardedAwardsTable.setModel(awardTableModel);
-        awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        JTableUtilities.resizeColumnWidth(awardedAwardsTable);
-        awardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
-            public void valueChanged(ListSelectionEvent event) {
-                unawardedAwardsTable.clearSelection();
-            }
-        });
-
-        JScrollPane pane = new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        Dimension preferedSize = pane.getPreferredSize();
-        preferedSize.width = 400;
-        preferedSize.height = 225;
-        pane.setPreferredSize(preferedSize);
-        awardedAwardsPanel.add(pane, gridBagConstraints);
-
-        return awardedAwardsPanel;
-    }
 
     private JPanel createButtonsPanel() {
         JPanel panel = new JPanel();
@@ -302,21 +297,27 @@ public class ScenarioAwardsPanel extends JPanel {
 
             ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
 
+            boolean firstPersonProcessed = false;
+
             for(int personIndex : personnelTable.getSelectedRows())
             {
                 ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personIndex);
+                UUID personId = personStatus.getId();
+                java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
 
                 int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
 
                 for(int i : selectedAwards){
                     int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
                     Award award = awardTableModel.getValueAt(modelIndex);
-                    UUID personId = personStatus.getId();
-                    java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
                     awardedAwards.add(award);
+                }
+
+                if(!firstPersonProcessed){
                     repopulatedAwardedAwardsTable(personId, awardedAwards);
                     repopulateAwardPreviewPanel(personId, awardedAwards);
                 }
+                firstPersonProcessed = true;
             }
         }
     }
@@ -327,6 +328,8 @@ public class ScenarioAwardsPanel extends JPanel {
 
             ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
             ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
+            UUID personId = personStatus.getId();
+            java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
 
             int[] selectedAwards = awardedAwardsTable.getSelectedRows();
 
@@ -334,62 +337,61 @@ public class ScenarioAwardsPanel extends JPanel {
                 int modelIndex = awardedAwardsTable.convertRowIndexToModel(selectedAwards[i]);
 
                 Award award = awardTableModel.getValueAt(modelIndex);
-                UUID personId = personStatus.getId();
-                java.util.List<Award> awardedAwards = awardedAwardsMap.get(personId);
                 awardedAwards.remove(award);
                 repopulatedAwardedAwardsTable(personId, awardedAwards);
                 repopulateAwardPreviewPanel(personId, awardedAwards);
             }
+
+            repopulatedAwardedAwardsTable(personId, awardedAwards);
+            repopulateAwardPreviewPanel(personId, awardedAwards);
         }
     }
 
     class AwardPreviewPanel extends JPanel{
 
-        private GridBagConstraints gridBagConstraints = new GridBagConstraints();
-        private IconPackage iconPackage;
+        private AwardedMedalsViewPanel medalsPanel;
+        private AwardedMiscViewPanel miscsPanel;
+        private CustomPersonPortraitViewPanel personPanel;
 
         public AwardPreviewPanel(IconPackage iconPackage) {
 
             super();
 
             setLayout(new GridBagLayout());
-            this.iconPackage = iconPackage;
-            gridBagConstraints.anchor = GridBagConstraints.NORTHWEST;
-            gridBagConstraints.weightx = 0.0;
+
+            GridBagConstraints gbc = new GridBagConstraints();
+
+            gbc.anchor = GridBagConstraints.NORTHWEST;
+            gbc.fill = GridBagConstraints.BOTH;
+            gbc.gridheight = 2;
+            personPanel = new CustomPersonPortraitViewPanel(iconPackage);
+            add(personPanel, gbc);
+
+            gbc.weightx = 1.0;
+            gbc.weighty = 0.4;
+            gbc.gridheight = 1;
+            gbc.gridx = 1;
+            gbc.gridy = 0;
+            medalsPanel = new AwardedMedalsViewPanel(iconPackage.getAwardIcons(), new Dimension(20,40));
+            Dimension preferedSize = medalsPanel.getPreferredSize();
+            preferedSize.width = 300;
+            medalsPanel.setPreferredSize(preferedSize);
+            add(medalsPanel, gbc);
+
+            gbc.gridy = 1;
+            gbc.weighty = 0.6;
+            miscsPanel = new AwardedMiscViewPanel(iconPackage.getAwardIcons(), new Dimension(60,60));
+            preferedSize = miscsPanel.getPreferredSize();
+            preferedSize.width = 300;
+            miscsPanel.setPreferredSize(preferedSize);
+            add(miscsPanel, gbc);
         }
 
         public void updatePreviewForAwards(java.util.List<Award> awards)
         {
-            removeAll();
-
-            GridBagConstraints gbc_pnlPortrait = new GridBagConstraints();
-            gbc_pnlPortrait.gridx = 0;
-            gbc_pnlPortrait.gridy = 0;
-
-            gbc_pnlPortrait.gridheight = 2;
-            gbc_pnlPortrait.anchor = GridBagConstraints.NORTHWEST;
-            JPanel pnlPortrait = new CustomPersonPortraitViewPanel("", "default.gif", awards, iconPackage);
-            add(pnlPortrait, gbc_pnlPortrait);
-
-            gbc_pnlPortrait.gridx = 1;
-            gbc_pnlPortrait.gridy = 0;
-            gbc_pnlPortrait.gridheight = 1;
-            gbc_pnlPortrait.fill = GridBagConstraints.BOTH;
-
-            JPanel medalsPanel = new AwardedMedalsViewPanel(awards, iconPackage.getAwardIcons());
-            //medalsPanel.setLayout(new WrapLayout(FlowLayout.LEFT, 300));
-            Dimension preferedSize = medalsPanel.getPreferredSize();
-            preferedSize.width = 300;
-            medalsPanel.setPreferredSize(preferedSize);
-            add(medalsPanel, gbc_pnlPortrait);
-
-            gbc_pnlPortrait.gridy = 1;
-            JPanel miscPanel = new AwardedMiscViewPanel(awards, iconPackage.getAwardIcons(), new Dimension(60, 60));
-            //miscPanel.setLayout(new WrapLayout(FlowLayout.LEFT, 300));
-            preferedSize = miscPanel.getPreferredSize();
-            preferedSize.width = 300;
-            miscPanel.setPreferredSize(preferedSize);
-            add(miscPanel, gbc_pnlPortrait);
+            personPanel.refresh(awards, "", "default.gif");
+            medalsPanel.refresh(awards);
+            miscsPanel.refresh(awards);
 
             this.revalidate();
             this.repaint();

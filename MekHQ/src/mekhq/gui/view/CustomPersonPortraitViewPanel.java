@@ -23,11 +23,11 @@ import megamek.common.Crew;
 import megamek.common.util.DirectoryItems;
 import mekhq.IconPackage;
 import mekhq.campaign.personnel.Award;
+import mekhq.campaign.personnel.Person;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,40 +42,23 @@ public class CustomPersonPortraitViewPanel extends JPanel {
     private DirectoryItems portraits;
     private DirectoryItems awardIcons;
 
-    private List<Award> awards;
-    private String portraitIconCategory;
-    private String portraitIconFilename;
-
     private static final int MAX_NUMBER_OF_RIBBON_AWARDS_PER_ROW = 4;
 
-    public CustomPersonPortraitViewPanel(String portraitIconCategory, String portraitIconFilename, List<Award> awards, IconPackage ip) {
+    public CustomPersonPortraitViewPanel(IconPackage ip) {
 
         super();
         this.portraits = ip.getPortraits();
         this.awardIcons = ip.getAwardIcons();
-        this.portraitIconCategory = portraitIconCategory;
-        this.portraitIconFilename = portraitIconFilename;
-        this.awards = awards;
+    }
 
-        lblPortrait = new JLabel();
+    public void refresh(List<Award> awards, String portraitIconCategory, String portraitIconFilename){
+        removeAll();
+        drawPortrait(portraitIconCategory, portraitIconFilename);
+        drawRibbons(awards);
+    }
 
-        setName("pnlPortrait");
-        setBackground(Color.WHITE);
-        setLayout(new GridBagLayout());
-
-        lblPortrait.setName("lblPortait"); // NOI18N
-        lblPortrait.setBackground(Color.WHITE);
-        setPortrait();
-
-        drawRibbons();
-
-        GridBagConstraints gbc_lblPortrait = new GridBagConstraints();
-        gbc_lblPortrait.gridx = 0;
-        gbc_lblPortrait.gridy = 0;
-        gbc_lblPortrait.fill = GridBagConstraints.NONE;
-        gbc_lblPortrait.anchor = GridBagConstraints.NORTHWEST;
-        gbc_lblPortrait.insets = new Insets(0,0,0,0);
-        add(lblPortrait, gbc_lblPortrait);
+    public void refresh(Person person){
+        refresh(person.getAwards(), person.getPortraitCategory(), person.getPortraitFileName());
     }
 
     /**
@@ -85,7 +68,20 @@ public class CustomPersonPortraitViewPanel extends JPanel {
      *         will be <code>null</code> if no portrait was selected
      *          or if there was an error loading it.
      */
-    private void setPortrait() {
+    protected void drawPortrait(String portraitIconCategory, String portraitIconFilename) {
+        lblPortrait = new JLabel();
+
+        setName("pnlPortrait");
+        setLayout(new GridBagLayout());
+        lblPortrait.setName("lblPortait"); // NOI18N
+
+        GridBagConstraints gbc_lblPortrait = new GridBagConstraints();
+        gbc_lblPortrait.gridx = 0;
+        gbc_lblPortrait.gridy = 0;
+        gbc_lblPortrait.fill = GridBagConstraints.NONE;
+        gbc_lblPortrait.anchor = GridBagConstraints.NORTHWEST;
+        gbc_lblPortrait.insets = new Insets(0,0,0,0);
+        add(lblPortrait, gbc_lblPortrait);
 
         if(Crew.ROOT_PORTRAIT.equals(portraitIconCategory)) {
             portraitIconCategory = ""; //$NON-NLS-1$
@@ -117,7 +113,7 @@ public class CustomPersonPortraitViewPanel extends JPanel {
     /**
      * Draws the ribbons below the person portrait.
      */
-    private void drawRibbons() {
+    protected void drawRibbons(List<Award> awards) {
 
         Box boxRibbons;
 
