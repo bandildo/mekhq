@@ -38,6 +38,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -57,7 +58,7 @@ public class ScenarioAwardsPanel extends JPanel {
 
     private AwardPreviewPanel awardPreviewPanel;
 
-    private HashMap<UUID, Set<Award>> awardedAwardsMap = new HashMap<>();
+    private HashMap<UUID, ScenarioAwardsAwardTableModel> personAwardTableModelMap = new HashMap<>();
 
     public ScenarioAwardsPanel(ResolveScenarioTracker scenarioTracker, IconPackage iconPackage) {
         super();
@@ -89,6 +90,7 @@ public class ScenarioAwardsPanel extends JPanel {
         gridBagConstraints.gridx = 3;
         JPanel unawardedAwardsPanel = createUnawardedAwardsPanel();
         this.add(unawardedAwardsPanel, gridBagConstraints);
+
     }
 
     private JPanel createLeftSidePanel() {
@@ -115,11 +117,13 @@ public class ScenarioAwardsPanel extends JPanel {
         awardedAwardsTable.setModel(awardTableModel);
         awardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         JTableUtilities.resizeColumnWidth(awardedAwardsTable);
+
         awardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
             public void valueChanged(ListSelectionEvent event) {
                 unawardedAwardsTable.clearSelection();
             }
         });
+
         JScrollPane awardedAwardsPane = new JScrollPane(awardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         Dimension preferedSize = awardedAwardsPane.getPreferredSize();
         preferedSize.width = 400;
@@ -141,18 +145,18 @@ public class ScenarioAwardsPanel extends JPanel {
                 ResolveScenarioTracker.PersonStatus personStatus = personTableModel.getPersonAt(personIndex);
                 UUID personId = personStatus.getId();
 
-                Set<Award> awardedAwards;
+                ScenarioAwardsAwardTableModel selectedPersonTableModel;
 
-                if(awardedAwardsMap.containsKey(personId)){
-                    awardedAwards = awardedAwardsMap.get(personId);
+                if(personAwardTableModelMap.containsKey(personId)){
+                    selectedPersonTableModel = personAwardTableModelMap.get(personId);
                 }
                 else{
-                    awardedAwards = new HashSet<>();
-                    awardedAwardsMap.put(personId, awardedAwards);
+                    selectedPersonTableModel = new ScenarioAwardsAwardTableModel();
+                    personAwardTableModelMap.put(personId, selectedPersonTableModel);
                 }
 
-                repopulatedAwardedAwardsTable(personId, awardedAwards);
-                repopulateAwardPreviewPanel(personId, awardedAwards);
+                repopulatedAwardedAwardsTable(personId, selectedPersonTableModel);
+                repopulateAwardPreviewPanel(personId, selectedPersonTableModel);
             }
         });
 
@@ -166,17 +170,15 @@ public class ScenarioAwardsPanel extends JPanel {
         return pane;
     }
 
-    private void repopulatedAwardedAwardsTable(UUID personId, Collection<Award> awardedAwards){
-
-        TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>(awardTableModel);
-
-        sorter.setRowFilter(new AwardedAwardsFilter(awardedAwards));
+    private void repopulatedAwardedAwardsTable(UUID personId, ScenarioAwardsAwardTableModel tableModel) {
+        awardedAwardsTable.setModel(tableModel);
+        TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<>((ScenarioAwardsAwardTableModel) awardedAwardsTable.getModel());
+        sorter.setRowFilter(new AwardedAwardsFilter());
         awardedAwardsTable.setRowSorter(sorter);
-        JTableUtilities.resizeColumnWidth(awardedAwardsTable);
     }
 
-    private void repopulateAwardPreviewPanel(UUID personId, Collection<Award> awardedAwards){
-        awardPreviewPanel.updatePreviewForAwards(awardedAwards);
+    private void repopulateAwardPreviewPanel(UUID personId, ScenarioAwardsAwardTableModel tableModel){
+        awardPreviewPanel.updatePreviewForAwards(tableModel.getAwards());
     }
 
     private JPanel createUnawardedAwardsPanel() {
@@ -245,16 +247,20 @@ public class ScenarioAwardsPanel extends JPanel {
         gridBagConstraints.gridy = 1;
         unawardedAwardsPanel.add(searchTextField, gridBagConstraints);
 
+        awardTableModel.populateWithAllAwards();
         unawardedAwardsTable.setModel(awardTableModel);
         unawardedAwardsTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         unawardedAwardsTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-//        unawardedAwardsTable.removeColumn(unawardedAwardsTable.getColumnModel().getColumn(1));
+        TableRowSorter<ScenarioAwardsAwardTableModel> sorter = new TableRowSorter<ScenarioAwardsAwardTableModel>((ScenarioAwardsAwardTableModel) unawardedAwardsTable.getModel());
+        unawardedAwardsTable.setRowSorter(sorter);
         JTableUtilities.resizeColumnWidth(unawardedAwardsTable);
         unawardedAwardsTable.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
             public void valueChanged(ListSelectionEvent event) {
                 awardedAwardsTable.clearSelection();
             }
         });
+
+        unawardedAwardsTable.removeColumn(unawardedAwardsTable.getColumnModel().getColumn(0));
 
         gridBagConstraints.gridy = 2;
         JScrollPane pane = new JScrollPane(unawardedAwardsTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -288,7 +294,9 @@ public class ScenarioAwardsPanel extends JPanel {
         return panel;
     }
 
-    public HashMap<UUID, Set<Award>> getAwardedAwardsMap(){ return awardedAwardsMap; }
+    public HashMap<UUID, ScenarioAwardsAwardTableModel> getPersonAwardTableModelMap(){
+        return personAwardTableModelMap;
+    }
 
     class AddAction extends AbstractAction {
 
@@ -303,27 +311,19 @@ public class ScenarioAwardsPanel extends JPanel {
             {
                 ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personIndex);
                 UUID personId = personStatus.getId();
-                Set<Award> awardedAwards = awardedAwardsMap.get(personId);
+                ScenarioAwardsAwardTableModel selectedPersonTableModel = personAwardTableModelMap.get(personId);
 
                 int[] selectedAwards = unawardedAwardsTable.getSelectedRows();
 
                 for(int i : selectedAwards){
                     int modelIndex = unawardedAwardsTable.convertRowIndexToModel(i);
                     Award award = awardTableModel.getValueAt(modelIndex);
-
-                    if(awardedAwards.contains(award)){
-                        Award personAward = awardedAwards.stream().filter(award::equals).findAny().orElse(null);
-                        personAward.incrementQuantity();
-                    }
-                    else{
-                        award.incrementQuantity();
-                        awardedAwards.add(award);
-                    }
+                    selectedPersonTableModel.addAward(award);
                 }
 
                 if(!firstPersonProcessed){
-                    repopulatedAwardedAwardsTable(personId, awardedAwards);
-                    repopulateAwardPreviewPanel(personId, awardedAwards);
+                    repopulatedAwardedAwardsTable(personId, selectedPersonTableModel);
+                    repopulateAwardPreviewPanel(personId, selectedPersonTableModel);
                 }
                 firstPersonProcessed = true;
             }
@@ -337,28 +337,21 @@ public class ScenarioAwardsPanel extends JPanel {
             ScenarioAwardsPersonTableModel model = (ScenarioAwardsPersonTableModel) personnelTable.getModel();
             ResolveScenarioTracker.PersonStatus personStatus = model.getPersonAt(personnelTable.getSelectedRow());
             UUID personId = personStatus.getId();
-            Set<Award> awardedAwards = awardedAwardsMap.get(personId);
+            ScenarioAwardsAwardTableModel selectedPersonTableModel = personAwardTableModelMap.get(personId);
 
             int[] selectedAwards = awardedAwardsTable.getSelectedRows();
 
             for(int i = selectedAwards.length - 1; i >= 0; i--){
                 int modelIndex = awardedAwardsTable.convertRowIndexToModel(selectedAwards[i]);
-                Award award = awardTableModel.getValueAt(modelIndex);
+                Award award = selectedPersonTableModel.getValueAt(modelIndex);
+                selectedPersonTableModel.removeAward(award);
 
-                if(awardedAwards.contains(award)){
-                    Award personAward = awardedAwards.stream().filter(award::equals).findAny().orElse(null);
-                    personAward.decrementQuantity();
-                    if(personAward.getQuantity() == 0){
-                        awardedAwards.remove(award);
-                    }
-                }
-
-                repopulatedAwardedAwardsTable(personId, awardedAwards);
-                repopulateAwardPreviewPanel(personId, awardedAwards);
+                repopulatedAwardedAwardsTable(personId, selectedPersonTableModel);
+                repopulateAwardPreviewPanel(personId, selectedPersonTableModel);
             }
 
-            repopulatedAwardedAwardsTable(personId, awardedAwards);
-            repopulateAwardPreviewPanel(personId, awardedAwards);
+            repopulatedAwardedAwardsTable(personId, selectedPersonTableModel);
+            repopulateAwardPreviewPanel(personId, selectedPersonTableModel);
         }
     }
 

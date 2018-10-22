@@ -24,14 +24,18 @@ import mekhq.campaign.personnel.AwardsFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
 
-    private java.util.List<Award> awards;
+    private List<Award> awards;
 
     public ScenarioAwardsAwardTableModel() {
         super();
         awards = new ArrayList<>();
+    }
+
+    public void populateWithAllAwards(){
         for (String setName : AwardsFactory.getInstance().getAllSetNames()) {
             for (Award award : AwardsFactory.getInstance().getAllAwardsForSet(setName)) {
                 awards.add(award);
@@ -79,7 +83,36 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
         return columnNames[col];
     }
 
+
     public Award getValueAt(Integer index) {
         return awards.get(index);
+    }
+
+    public List<Award> getAwards(){
+        return awards;
+    }
+
+    public void addAward(Award award){
+        for(Award myAward : awards){
+            if(myAward.equals(award)){
+                myAward.incrementQuantity();
+                return;
+            }
+        }
+
+        Award newAward = award.createCopy();
+        newAward.incrementQuantity();
+        awards.add(newAward);
+    }
+
+    public void removeAward(Award award){
+        for(Award myAward : awards){
+            if(myAward.equals(award)){
+                myAward.decrementQuantity();
+                if(myAward.getQuantity() <= 0){
+                    awards.remove(myAward);
+                }
+            }
+        }
     }
 }

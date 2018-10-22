@@ -28,22 +28,11 @@ import java.util.List;
 
 public class AwardedAwardsFilter extends RowFilter<ScenarioAwardsAwardTableModel, Integer> {
 
-    private Collection<Award> awardedAwards;
-
-    public AwardedAwardsFilter(Collection<Award> awardedAwards) {
-        super();
-        this.awardedAwards = awardedAwards;
-    }
-
     @Override
     public boolean include(Entry<? extends ScenarioAwardsAwardTableModel, ? extends Integer> entry) {
         ScenarioAwardsAwardTableModel awardTableModel = entry.getModel();
         Award award = awardTableModel.getValueAt(entry.getIdentifier());
 
-        if(awardedAwards.contains(award)){
-            return true;
-        }
-
-        return false;
+        return award.getQuantity() > 0;
     }
 }

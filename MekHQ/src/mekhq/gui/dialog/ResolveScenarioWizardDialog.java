@@ -1310,7 +1310,7 @@ public class ResolveScenarioWizardDialog extends JDialog {
             }
         }
 
-        tracker.setAwardedAwardsMap(pnlAwards.getAwardedAwardsMap());
+        tracker.setAwardedAwardsMap(pnlAwards.getPersonAwardTableModelMap());
 
     	//now process
     	tracker.resolveScenario(choiceStatus.getSelectedIndex()+1,txtReport.getText());

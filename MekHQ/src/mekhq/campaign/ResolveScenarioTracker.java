@@ -72,6 +72,7 @@ import mekhq.campaign.personnel.Person;
 import mekhq.campaign.unit.TestUnit;
 import mekhq.campaign.unit.Unit;
 import mekhq.gui.FileDialogs;
+import mekhq.gui.model.ScenarioAwardsAwardTableModel;
 
 /**
  * This object will be the main workhorse for the scenario
@@ -98,7 +99,7 @@ public class ResolveScenarioTracker {
     Hashtable<String, String> killCredits;
     Hashtable<UUID, EjectedCrew> ejections;
     Hashtable<UUID, EjectedCrew> enemyEjections;
-    HashMap<UUID,Set<Award>> awardedAwardsMap;
+    HashMap<UUID, ScenarioAwardsAwardTableModel> awardedAwardsMap;
 
     /* AtB */
     int contractBreaches = 0;
@@ -1094,7 +1095,7 @@ public class ResolveScenarioTracker {
                 campaign.addKill(k);
             }
             if(awardedAwardsMap.containsKey(pid)){
-                for(Award award : awardedAwardsMap.get(pid)){
+                for(Award award : awardedAwardsMap.get(pid).getAwards()){
                     person.awardController.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
                 }
             }
@@ -1388,7 +1389,7 @@ public class ResolveScenarioTracker {
         return (getMission() instanceof Contract) && ((Contract)getMission()).isSalvageExchange();
     }
 
-    public void setAwardedAwardsMap(HashMap<UUID,Set<Award>> awardedAwardsMap) {
+    public void setAwardedAwardsMap(HashMap<UUID, ScenarioAwardsAwardTableModel> awardedAwardsMap) {
         this.awardedAwardsMap = awardedAwardsMap;
     }
 

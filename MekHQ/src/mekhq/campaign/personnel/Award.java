@@ -226,6 +226,8 @@ public class Award implements MekHqXmlSerializable, Comparable<Award>, Serializa
         return (this.set.equals(set) && this.name.equals(name));
     }
 
+    public boolean equals(Award award){ return this.equals(award.getSet(), award.getName());}
+
     /**
      * Compares an award with this one by priority: xp, edge and name. Used for sorting.
      * @param other award to be compared

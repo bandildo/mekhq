@@ -76,15 +76,15 @@ public class PersonTest {
         mockPerson.awardController.addAndLogAward("TestSet","Test Award 1", new SimpleDateFormat("yyyy-MM-dd").parse("3000-01-02"));
         mockPerson.awardController.addAndLogAward("TestSet","Test Award 2", new SimpleDateFormat("yyyy-MM-dd").parse("3000-01-01"));
 
-        assertEquals( 2, mockPerson.awardController.getNumberOfAwards(PersonnelTestUtilities.getTestAward1()));
+        assertEquals( 2, mockPerson.awardController.getNumberOfAwards(AwardTestUtilities.getTestAward1()));
 
         mockPerson.awardController.removeAward("TestSet", "Test Award 1", "3000-01-01");
 
-        assertEquals(1, mockPerson.awardController.getNumberOfAwards(PersonnelTestUtilities.getTestAward1()));
+        assertEquals(1, mockPerson.awardController.getNumberOfAwards(AwardTestUtilities.getTestAward1()));
 
         mockPerson.awardController.removeAward("TestSet", "Test Award 1", "3000-01-02");
 
-        assertEquals(0, mockPerson.awardController.getNumberOfAwards(PersonnelTestUtilities.getTestAward1()));
+        assertEquals(0, mockPerson.awardController.getNumberOfAwards(AwardTestUtilities.getTestAward1()));
     }
 
     private void initPerson(){
@@ -92,6 +92,6 @@ public class PersonTest {
     }
 
     private void initAwards(){
-        AwardsFactory.getInstance().loadAwardsFromStream(PersonnelTestUtilities.getTestAwardSet(),"TestSet");
+        AwardsFactory.getInstance().loadAwardsFromStream(AwardTestUtilities.getTestAwardSet(),"TestSet");
     }
 }
