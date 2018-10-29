@@ -26,6 +26,9 @@ import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This is a table model to present a list of awards.
+ */
 public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
 
     private List<Award> awards;
@@ -84,14 +87,27 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
     }
 
 
+    /**
+     * Gets the award in a given index
+     * @param index index of the award
+     * @return
+     */
     public Award getValueAt(Integer index) {
         return awards.get(index);
     }
 
+    /**
+     * Returns a list with all the awards in this model
+     * @return
+     */
     public List<Award> getAwards(){
         return awards;
     }
 
+    /**
+     * Adds an award to this model
+     * @param award
+     */
     public void addAward(Award award){
         for(Award myAward : awards){
             if(myAward.equals(award)){
@@ -105,12 +121,17 @@ public class ScenarioAwardsAwardTableModel extends AbstractTableModel {
         awards.add(newAward);
     }
 
+    /**
+     * removes an award from this model
+     * @param award
+     */
     public void removeAward(Award award){
         for(Award myAward : awards){
             if(myAward.equals(award)){
                 myAward.decrementQuantity();
                 if(myAward.getQuantity() <= 0){
                     awards.remove(myAward);
+                    return;
                 }
             }
         }

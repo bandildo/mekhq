@@ -30,6 +30,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This panel presents a list of miscs
+ */
 public class AwardedMiscViewPanel extends JPanel {
 
     private Dimension miscDimensions;
@@ -46,6 +49,10 @@ public class AwardedMiscViewPanel extends JPanel {
         this.setLayout(new WrapLayout(FlowLayout.LEFT));
     }
 
+    /**
+     * Refreshes the view to present the medals of a given list of awards
+     * @param awards awards whose medals should be presented
+     */
     public void refresh(Collection<Award> awards) {
 
         removeAll();

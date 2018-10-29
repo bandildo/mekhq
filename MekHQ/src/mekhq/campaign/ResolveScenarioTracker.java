@@ -1096,7 +1096,9 @@ public class ResolveScenarioTracker {
             }
             if(awardedAwardsMap.containsKey(pid)){
                 for(Award award : awardedAwardsMap.get(pid).getAwards()){
-                    person.awardController.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
+                    for(int i = 0; i<award.getQuantity(); i++){
+                        person.awardController.addAndLogAward(award.getSet(), award.getName(), campaign.getDate());
+                    }
                 }
             }
             if(status.isMissing()) {

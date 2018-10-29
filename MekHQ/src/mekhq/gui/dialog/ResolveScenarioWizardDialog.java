@@ -73,6 +73,7 @@ import mekhq.campaign.mission.Loot;
 import mekhq.campaign.mission.Scenario;
 import mekhq.campaign.unit.TestUnit;
 import mekhq.campaign.unit.Unit;
+import mekhq.gui.dialog.scenarioAwards.ScenarioAwardsPanel;
 
 /**
  *
